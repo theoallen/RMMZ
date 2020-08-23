@@ -42,10 +42,6 @@ Terms of Use:
 
 var Theo = Theo || {}
 Theo.SkipTitle = function(){
-    if(this.already_run){
-        throw new Error("Nothing to see here");
-    }
-
     this.params = PluginManager.parameters('Theo_SkipTitle')
     this.onLoadSuccess = function(scene){
         SoundManager.playLoad();
@@ -92,6 +88,5 @@ Theo.SkipTitle = function(){
             t.start.call(this);
         }
     }    
-    this.already_run = true
 }
 Theo.SkipTitle()
