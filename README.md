@@ -8,6 +8,10 @@ Terms of Use
 * If you use my plugin for commercial game, I have the right to ask a free copy of it **IF** I'm interested in your game.
 * If the terms is differ from this in what I've written in plugin description, refers to the plugin description.
 
+News
+=====
+Currently, this repository is for my code dump at the moment. I can not guarantee the stability any of the plugins. If you decide to use one, use it at your own risk.
+
 Version naming
 =====
 The version naming of my plugin will follow this standard
