@@ -1,6 +1,6 @@
 /*:@target MZ
 @url https://github.com/theoallen/RMMZ
-@plugindesc v1.0.0 - Play battle BGM based on various condition
+@plugindesc v1.0.1 - Play battle BGM based on various condition
 @author TheoAllen
 @url https://github.com/theoallen/RMMZ
 @help
@@ -8,10 +8,6 @@ This plugin allow you to specify BGM for a certain troop to minimize
 the usage of change battle BGM event for QoL
 
 Specify the BGM list in the audioList plugin parameters
-
-Known issue:
-- Audio delay when switching to a different BGM and I can not
-  figure it out why.
 
 @command Toggle
 @text Toggle
@@ -46,15 +42,15 @@ Known issue:
 @type number
 @default 100
 
-@param pan
-@text Pan
-@type number
-@default 0
-
 @param pitch
 @text Pitch
 @type number
 @default 100
+
+@param pan
+@text Pan
+@type number
+@default 0
 */
 
 var Theo = Theo || {}
@@ -66,6 +62,7 @@ Theo.CondBGM = function(){
     _.pluginName = "Theo_ConditionalBattleBGM"
     _.params = PluginManager.parameters(_.pluginName)
     _.list = []
+    _.rollNewBGM = true
 
     JSON.parse(_.params.BGMList).forEach(e => {
 
@@ -77,26 +74,39 @@ Theo.CondBGM = function(){
     });
 
     _.sample = function(){
-        return this[Math.floor(Math.random()*this.length)];
+        if (_.rollNewBGM){
+            let bgms = _.list.filter(item => item.isValid())
+            _.rolledBGM = bgms[Math.floor(Math.random()*bgms.length)]
+            _.rollNewBGM = false
+        }
     }
 
     PluginManager.registerCommand(_.pluginName, "Toggle", args => {
         $._toggleConditionalBGM = args.toggle === 'true'
     });
 
+    _.playBattleBGM = BattleManager.playBattleBgm
+    BattleManager.playBattleBgm = function() {
+        _.sample()
+        _.playBattleBGM()
+    };
+
     _.battleBgm = $.battleBgm
     $.battleBgm = function() {
         if (this._toggleConditionalBGM === undefined){
             this._toggleConditionalBGM = true
         }
-        if(this._toggleConditionalBGM){
-            var bgms = _.list.filter(item => item.isValid())
-            var bgm = _.sample.call(bgms)
-            if (bgm){
-                return bgm
-            }
+        if(this._toggleConditionalBGM && _.rolledBGM){
+            return _.rolledBGM
         }
         return _.battleBgm.call(this)
+    };
+
+    var map = Scene_Map.prototype
+    _.mapInit = map.initialize
+    map.initialize = function() {
+        _.rollNewBGM = true
+        _.mapInit.call(this)
     };
 }
 Theo.CondBGM()
