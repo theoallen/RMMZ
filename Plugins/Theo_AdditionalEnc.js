@@ -13,8 +13,7 @@ How to use:
 - Add erase event to make it only run once per map load
 
 Terms of Use:
-- Free for commercial
-- Credit is optional
+https://github.com/theoallen/RMMZ/blob/master/README.md
 
 @command Encounters
 @text Encounters
