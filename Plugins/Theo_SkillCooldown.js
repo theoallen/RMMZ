@@ -40,7 +40,6 @@ Theo.SkillCD = function(){
     }
 
     _.setCooldown = function(skillId, turn){
-        console.log(turn)
         this._cooldowns[String(skillId)] = turn
     }
 
