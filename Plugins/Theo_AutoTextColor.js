@@ -1,6 +1,6 @@
 /*:@target MZ
 @url https://github.com/theoallen/RMMZ
-@plugindesc v1.0.0 - Auto Text Color
+@plugindesc v1.0.1 - Auto Text Color
 @author TheoAllen
 @help
 This plugins assign a color automatically to some of the word you
@@ -97,7 +97,7 @@ Theo.AutoColor = function(){
   });
 
   Game_System.prototype._autoColor = {
-    activate: _.params.activate == "true",
+    active: _.params.activate == "true",
     caseSensitive: _.params.caseSensitive == "true",
   }
 
@@ -111,7 +111,7 @@ Theo.AutoColor = function(){
   };
 
   _.convertAutoColor = function(text){
-    if (!$gameSystem._autoColor.activate){
+    if (!$gameSystem._autoColor.active){
       return text
     }
     let newText = text
@@ -127,11 +127,11 @@ Theo.AutoColor = function(){
   }
 
   PluginManager.registerCommand(_.pluginName, "autoColorActivate", a => {
-    $gameSystem._autoColor.activate = true
+    $gameSystem._autoColor.active = true
   });
 
   PluginManager.registerCommand(_.pluginName, "autoColorDeactivate", a => {
-    $gameSystem._autoColor.activate = false
+    $gameSystem._autoColor.active = false
   });
 
   PluginManager.registerCommand(_.pluginName, "caseSensitive", a => {
