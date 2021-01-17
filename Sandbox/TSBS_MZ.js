@@ -1,9 +1,9 @@
 /*:
 @target MZ
-@plugindesc v0.1.0 - Theolized Action Sequence System.
+@plugindesc v0.1.0 - Theolized Sideview Battle Sequence MZ.
 @author TheoAllen
 @help
-TASS is spritesheet-based animation sequence plugin aiming for a free-frame 
+TSBS is spritesheet-based animation sequence plugin aiming for a free-frame 
 pick spritesheet animation sequencer. You are encouraged to use any kind 
 of spritesheet you want instead of using the default MZ battle spritesheet 
 format.
@@ -62,7 +62,7 @@ the delay of each frame and all the timing on your own.
 @option Target
 @option Slide
 @option Coordinate
-@option Return
+@option Home
 @text To
 @default Target
 @desc Where do you want to go?
@@ -102,15 +102,15 @@ the delay of each frame and all the timing on your own.
 @type animation
 @desc Select the animation file (Selecting 0 will use the skill animation)
 @default 0
-
-@arg type
-@text Type
-@type select
-@option Single
-@option Multiple
-@desc If targetting a multiple target. Selecting single will only play animation on the center of them.
-@default Multiple
-
+*/
+// @arg type
+// @text Type
+// @type select
+// @option Single
+// @option Multiple
+// @desc If targetting a multiple target. Selecting single will only play animation on the center of them.
+// @default Multiple
+/*
 @command cast
 @text Cast Animation
 @desc Show animation on the subject battler (self)
@@ -123,11 +123,11 @@ the delay of each frame and all the timing on your own.
 
 @command actionEffect
 @text Action Effect
-@desc Invoke item/skill to the target battler
+@desc Invoke item/skill effect to the target battler
 
 @command actionEffectMod
 @text Action Effect (Modified)
-@desc Invoke a modified item/skill to the target battler
+@desc Invoke a modified item/skill effect to the target battler
 
 @arg skill
 @text Skill ID
@@ -438,30 +438,31 @@ the delay of each frame and all the timing on your own.
 */
 
 var dbug = () => { console.log("debug")}
-var TASS = {}
+var TSBS = {}
 
-TASS.Sequence_Interpreter = function(battler, depth, endFunc){
-    Game_Interpreter.prototype.initialize.call(this, depth);
+TSBS.Sequence_Interpreter = function(battler, depth){
+    Game_Interpreter.prototype.initialize.call(this, depth, phaseName);
     this._battler = battler;
-    this._endFunc = null;
 }
-TASS.Sequence_Interpreter.prototype = Object.create(Game_Interpreter.prototype);
-TASS.Sequence_Interpreter.prototype.constructor = TASS.Sequence_Interpreter
-TASS.init = function(){
-    this.pluginName = "TASS_MZ"
+TSBS.Sequence_Interpreter.prototype = Object.create(Game_Interpreter.prototype);
+TSBS.Sequence_Interpreter.prototype.constructor = TSBS.Sequence_Interpreter
+TSBS.init = function(){
+    this.pluginName = "TSBS_MZ"
+    this.params = PluginManager.parameters(this.pluginName)
+
     this.addons = []
     this.actorSprites = {} // Store actor sprite reference
     this.enemySprites = {} // Store enemy sprite reference
 
-    let a = this;
-    let seq = TASS.Sequence_Interpreter.prototype;
+    let _ = this;
+    let seq = TSBS.Sequence_Interpreter.prototype;
 
     //=============================================================================================
-    // Sequence Interpreter 
+    //#region Sequence_Interpreter 
     //---------------------------------------------------------------------------------------------
     seq.setupChild = function(list, eventId) {
-        this._childInterpreter = new Theo.AnimBattler.Sequence_Interpreter(this._battler, this._depth + 1);
-        this._childInterpreter.setup(list, eventId);
+        this._childInterpreter = new TSBS.Sequence_Interpreter(this._battler, this._depth + 1);
+        this._childInterpreter.setup(eventId, this._phaseName);
     };
 
     seq.terminate = function() {
@@ -472,47 +473,53 @@ TASS.init = function(){
         }
     };
 
-    seq.setup = function(eventId, endFunc = null) {
+    seq.setup = function(eventId, phaseName, endFunc = null) {
         const commonEvent = $dataCommonEvents[eventId];
         Game_Interpreter.prototype.setup.call(this, commonEvent.list, eventId);
         this._endFunc = endFunc;
+        this._phaseName = phaseName;
     }
 
     seq.command357 = function(params) {
-        TASSCommand = params[0] == a.pluginName
-        if (TASSCommand && this._battler["TASS_" + params[1]] !== undefined){
-            return this._battler["TASS_" + params[1]](params[3], this);
+        TSBSCommand = params[0] == _.pluginName
+        if (TSBSCommand && this._battler["TSBS_" + params[1]] !== undefined){
+            args = params[3];
+            args.sequencer = this;
+            return this._battler["TSBS_" + params[1]](params[3]);
         }
         args = params[3];
         args.battler = this._battler;
         return Game_Interpreter.prototype.command357.call(this, params);
     }
+    //#endregion
     //=============================================================================================
-    // Game_Battler modification
+
+    //=============================================================================================
+    //#region Game_Battler 
     //---------------------------------------------------------------------------------------------
-    a.battler = {}
+    _.battler = {}
     bb = Game_Battler.prototype;
 
-    a.battler.onBattleStart = bb.onBattleStart
+    _.battler.onBattleStart = bb.onBattleStart
     bb.onBattleStart = function(){
-        a.battler.onBattleStart.call(this);
-        this._sequencer = new Theo.AnimBattler.Sequence_Interpreter(this, 0);
+        _.battler.onBattleStart.call(this);
+        this._sequencer = new TSBS.Sequence_Interpreter(this, 0);
         this.startIdleMotion();
     }
 
-    a.battler.init = bb.initialize
+    _.battler.init = bb.initialize
     bb.initialize = function(){
         this._animMotion = {}
-        a.battler.init.call(this)
+        _.battler.init.call(this)
     }
 
-    a.battler.initMembers = bb.initMembers
+    _.battler.initMembers = bb.initMembers
     bb.initMembers = function() {
-        a.battler.initMembers.call(this)
-        this.clearTASS()
+        _.battler.initMembers.call(this)
+        this.clearTSBS()
     }
 
-    bb.clearTASS = function(){
+    bb.clearTSBS = function(){
         this._sequencer = null
         this._sprite = null
         this._animCell = 0
@@ -529,6 +536,10 @@ TASS.init = function(){
         }
     }
 
+    bb.homePos = function() {
+        return {"x": 0, "y": 0};
+    }
+
     bb.updateSequencer = function(){
         if(this._sequencer !== null){
             this._sequencer.update();
@@ -536,14 +547,14 @@ TASS.init = function(){
     }
 
     bb.startIdleMotion = function(){
-        this._sequencer.setup(1, function() { this._index = 0});
+        this._sequencer.setup(1, "idle", function() { this._index = 0});
     }
 
     bb.sprite = function(){
         if (this.isActor()){
-            return a.actorSprites[this._actorId];
+            return _.actorSprites[this._actorId];
         }else{
-            return a.enemySprites[this.index()];
+            return _.enemySprites[this.index()];
         }
     }
 
@@ -555,33 +566,119 @@ TASS.init = function(){
         }
     }
 
-    bb.TASS_pose = function(args, sequencer){
+    //#endregion
+    //============================================================================================
+
+    //============================================================================================
+    //#region Sequence Functions 
+    //---------------------------------------------------------------------------------------------
+    bb.TSBS_pose = function(args){
         console.log(args)
-        this._sheetNum = parseInt(args.sheetnum);
+        //this._sheetNum = parseInt(args.sheetnum);
         this._animCell = parseInt(args.frame);
-        sequencer.wait(args.wait);
+        args.sequencer.wait(args.wait);
         return true;
     }
-    //============================================================================================= 
-    // Sprite_Battler
-    //---------------------------------------------------------------------------------------------
-    a.spriteBattler = {}
-    let sb = Sprite_Battler.prototype
 
-    a.spriteBattler.startMove = sb.startMove
-    sb.startMove = function(x, y, duration, jump = 0){
-        this._maxDuration = duration
-        this._jumpPower = jump
-        a.spriteBattler.startMove.call(this,x,y,duration)
+    bb.TSBS_move = function(args){
+        var spr = this.sprite();
+        var targX = parseInt(args.x);
+        var targY = parseInt(args.y);
+        switch(args.to){
+            case "Target":
+                targX += this._targetArray.reduce((total, trg)=>{ return trg.sprite().x + total}, 0)
+                targY += this._targetArray.reduce((total, trg)=>{ return trg.sprite().y + total}, 0)
+                break;
+            case "Slide":
+                targX += spr.x;
+                targY += spr.y;
+                break;
+            case "Home":
+                targX += this.homePos().x;
+                targY += this.homePos().y;
+                break;
+        }
+        spr.startMove(targX, targY, args.dur, args.jump)
     }
 
+    bb.TSBS_showAnim = function(args){
+
+    }
+
+    bb.TSBS_cast = function(args){
+
+    }
+
+    bb.TSBS_actionEffect = function(args){
+
+    }
+
+    bb.TSBS_actionEffectMod = function(args){
+
+    }
+
+    bb.TSBS_changeTarget = function(args){
+
+    }
+    //#endregion
+    //=============================================================================================
+
     //============================================================================================= 
-    // Sprite_Actor
+    //#region Sprite_Battler
     //---------------------------------------------------------------------------------------------
-    Sprite_Actor.prototype.updateMotion = function() {
+    _.spriteBattler = {}
+    let sb = Sprite_Battler.prototype
+
+    _.spriteBattler.initMembers = sb.initMembers
+    sb.initMembers = function(){
+        _.spriteBattler.initMembers.call(this)
+        this._maxDuration = 0;
+        this._jumpPower = 0;
+    }
+
+    _.spriteBattler.startMove = sb.startMove
+    sb.startMove = function(x, y, duration, jump = 0){
+        this._maxDuration = duration;
+        this._jumpPower = jump;
+        _.spriteBattler.startMove.call(this,x,y,duration);
+    }
+
+    sb.jumpHeight = function(){
+        if (this._movementDuration === 0) {
+            return 0
+        }
+        let time = this._maxDuration - this._movementDuration;
+        let gravity = this._jumpPower/(this._maxDuration/2);
+        let height = (this._jumpPower * time) - (gravity * time * (time + 1) / 2);
+        return Math.max(0, height);
+    }
+
+    _.spriteBattler.updatePos = sb.updatePosition
+    sb.updatePosition = function() {
+        _.spriteBattler.updatePos.call(this);
+        this._y += jumpHeight()
+    };
+    //#endregion
+    //============================================================================================= 
+
+    //============================================================================================= 
+    //#region Sprite_Actor
+    //---------------------------------------------------------------------------------------------
+    _.spriteActor = {}
+    let sa = Sprite_Actor.prototype
+
+    _.spriteActor.init = sa.initialize
+    sa.initialize = function(battler) {
+        _.spriteActor.init.call(this, battler);
+        _.actorSprites[battler._actorId] = this;
     };
     
-    Sprite_Actor.prototype.updateFrame = function() {
+    // Delete update motion. I don't need it
+    sa.updateMotion = function() {
+    };
+    
+    // Overwrite update frame
+    sa.updateFrame = function() {
         Sprite_Battler.prototype.updateFrame.call(this);
         var bitmap = this._mainSprite.bitmap;
         if (bitmap) {
@@ -590,28 +687,28 @@ TASS.init = function(){
             var ch = bitmap.height / 6;
             var cy = Math.floor(animCell / 6) * ch
             var cx = (animCell % 9) * cw
-            //console.log(animCell)
             this._mainSprite.setFrame(cx, cy, cw, ch);
         }
     };
+    //#endregion
+    //============================================================================================= 
 
     //============================================================================================= 
     // Scene Update
     //---------------------------------------------------------------------------------------------
-    a.scene_battle_update = Scene_Battle.prototype.update;
+    _.scene_battle_update = Scene_Battle.prototype.update;
     Scene_Battle.prototype.update = function() {
-        a.scene_battle_update.call(this);
-        //$gameActors.actor(1).updateSequencer();
-        $gameParty.update();
+        _.scene_battle_update.call(this);
+        $gameParty.updateSequencer();
+        $gameTroop.updateSequencer();
     };
 
-    Game_Party.prototype.update = function(){
+    Game_Unit.prototype.updateSequencer = function(){
         for(member in this.members()){
-            //console.log(member);
             member.updateSequencer();
         }
     }
 }
 
 // Initialize
-TASS.init()
+TSBS.init()
