@@ -12,6 +12,8 @@ News
 =====
 Currently, this repository is for my code dump at the moment. I can not guarantee the stability any of the plugins. If you decide to use one, use it at your own risk.
 
+Plugins on the Sandbox folder are not ready to use (I use it mostly for backup). But you're free to look at it.
+
 Version naming
 =====
 The version naming of my plugin will follow this standard
