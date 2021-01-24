@@ -102,15 +102,7 @@ the delay of each frame and all the timing on your own.
 @type animation
 @desc Select the animation file (Selecting 0 will use the skill animation)
 @default 0
-*/
-// @arg type
-// @text Type
-// @type select
-// @option Single
-// @option Multiple
-// @desc If targetting a multiple target. Selecting single will only play animation on the center of them.
-// @default Multiple
-/*
+
 @command cast
 @text Cast Animation
 @desc Show animation on the subject battler (self)
@@ -313,8 +305,11 @@ the delay of each frame and all the timing on your own.
 @option Default
 @option Hit
 @option Miss
+@option Hit (roll)
 @option Evade
+@option Evade (roll)
 @option Critical
+@option Critical (roll)
 @default Default
 @desc Affect all the next attack regardless of hit/eva rate until you reset to the default.
 
@@ -436,61 +431,249 @@ the delay of each frame and all the timing on your own.
 @desc Y position of the n-th actor
 @default 0
 */
-
-var dbug = () => { console.log("debug")}
 var TSBS = {}
 
+// Borrowing event interpreter for sequencer
 TSBS.Sequence_Interpreter = function(battler, depth){
-    Game_Interpreter.prototype.initialize.call(this, depth, phaseName);
+    Game_Interpreter.prototype.initialize.call(this, depth);
     this._battler = battler;
 }
 TSBS.Sequence_Interpreter.prototype = Object.create(Game_Interpreter.prototype);
 TSBS.Sequence_Interpreter.prototype.constructor = TSBS.Sequence_Interpreter
+
+//-------------------------------------------------------------------------------------------------
+// IIFE alternative, because I have encapsulation
+// I know you hate this, but I do what I wanna do and I don't care
+//-------------------------------------------------------------------------------------------------
 TSBS.init = function(){
     this.pluginName = "TSBS_MZ"
-    this.params = PluginManager.parameters(this.pluginName)
 
-    this.addons = []
-    this.actorSprites = {} // Store actor sprite reference
-    this.enemySprites = {} // Store enemy sprite reference
+    this.addons = []        // Store addons name
+    this.actorSprites = {}  // Store actor sprite reference
+    this.enemySprites = {}  // Store enemy sprite reference
+    this.targets = []       // Store all affected battlers
+    this.actorPos = []      // Store actor home position parameter
 
     let _ = this;
-    let seq = TSBS.Sequence_Interpreter.prototype;
+    //=============================================================================================
+    //#region Loading parameters
+    //---------------------------------------------------------------------------------------------
+    _.params = PluginManager.parameters(this.pluginName)
+    JSON.parse(_.params["Actor Pos"]).forEach(innerJson => {
+        pos = JSON.parse(innerJson)
+        obj = {
+            x: parseInt(pos.X),
+            y: parseInt(pos.Y)
+        }
+        _.actorPos.push(obj);
+     })
+
+     this._maxRow = parseInt(this.params["Sheet Row"])
+     this._maxCol = parseInt(this.params["Sheet Column"])
+     this._sequenceList = {
+         idle: parseInt(this.params.Idle),
+         damaged: parseInt(this.params.Damaged),
+         pinch: parseInt(this.params.Pinch),
+         evade: parseInt(this.params.Evade),
+         return: parseInt(this.params.Return),
+         dead: parseInt(this.params.Dead),
+         victory: parseInt(this.params.Victory),
+         escape: parseInt(this.params.Escape),
+         intro: parseInt(this.params.Intro),
+         preintro: parseInt(this.params.PreIntro),
+         skill: parseInt(this.params.Skill),
+         item: parseInt(this.params.Item)
+     }
+     //#endregion
+     //============================================================================================
+
+     //============================================================================================
+     //#region Global function
+     //---------------------------------------------------------------------------------------------
+    // Global function to check if any battler is doing action sequence
+    _.isSequenceBusy = function(){
+        let allBattlers = $gameParty.allMembers().concat($gameTroop.members())
+        return allBattlers.some(battler => battler.doingAction())
+    }
+
+    // Array function, to remove duplicate, use it with binding.
+    // Shamelessly taken from stackoverflow
+    _.uniq = function() {
+        var a = this.concat();
+        for(var i=0; i<a.length; ++i) {
+            for(var j=i+1; j<a.length; ++j) {
+                if(a[i] === a[j])
+                    a.splice(j--, 1);
+            }
+        }
+        return a;
+    };
+    //#endregion
+    //=============================================================================================
+
+    //=============================================================================================
+    //#region Sequence Functions  
+    //---------------------------------------------------------------------------------------------
+    // The function binds Game_Battler, so the keyword "this" will refers to Game_Battler object
+    // If you want to make addon, make sure drop the function here (in TSBS.cmd object)
+    //
+    // Example: TSBS.cmd.cameraMove(args)
+    //---------------------------------------------------------------------------------------------
+    _.cmd = {}
+    let cmd = _.cmd
+
+    cmd.pose = function(args){
+        this._animCell = parseInt(args.frame);
+        args.sequencer.wait(args.wait);
+    }
+
+    cmd.move = function(args){
+        var spr = this.sprite();
+        var targX = parseInt(args.x);
+        var targY = parseInt(args.y);
+        switch(args.to){
+            case "Target":
+                targX += this._targetArray.reduce((total, trg)=>{ return trg.sprite().x + total}, 0)
+                targY += this._targetArray.reduce((total, trg)=>{ return trg.sprite().y + total}, 0)
+                break;
+            case "Slide":
+                targX += spr.x;
+                targY += spr.y;
+                break;
+            case "Home":
+                targX += this.homePos().x;
+                targY += this.homePos().y;
+                break;
+        }
+        spr.goto(targX, targY, args.dur, args.jump)
+    }
+
+    cmd.showAnim = function(args){
+        let animId = parseInt(args.anim);
+        if (animId === 0){
+            animId = this._itemInUse.animationId;
+            if(animId === -1){
+                animId = (this.isActor() ? this.attackAnimationId1() : 0)
+            }
+        }
+        console.log(animId);
+        $gameTemp.requestAnimation(this._targetArray, animId);
+    }
+
+    cmd.cast = function(args){
+        let animId = parseInt(args.anim);
+        if (animId === 0){
+            animId = this._itemInUse.animationId;
+            if(animId === -1){
+                animId = (this.isActor() ? this.attackAnimationId1() : 0)
+            }
+        }
+        console.log(animId);
+        $gameTemp.requestAnimation([this], animId);
+    }
+
+    cmd.actionEffect = function(args){
+        this._targetArray.forEach(target => {
+            BattleManager._action.apply(target)
+            // this.currentAction().apply(target)
+            if (target.shouldPopupDamage()){
+                target.startDamagePopup();
+            }
+        })
+    }
+
+    cmd.actionEffectMod = function(args){
+        
+    }
+
+    cmd.changeTarget = function(args){
+        
+    }
+    //#endregion
+    //=============================================================================================
 
     //=============================================================================================
     //#region Sequence_Interpreter 
     //---------------------------------------------------------------------------------------------
+    let seq = TSBS.Sequence_Interpreter.prototype;
     seq.setupChild = function(list, eventId) {
         this._childInterpreter = new TSBS.Sequence_Interpreter(this._battler, this._depth + 1);
         this._childInterpreter.setup(eventId, this._phaseName);
     };
 
     seq.terminate = function() {
-        if(this._endFunc == null){
+        if(this._endFunc === null){
             Game_Interpreter.prototype.terminate.call(this);
         }else{
             this._endFunc.call(this);
         }
     };
 
+    seq.ending = function(){
+        return this._list === null;
+    }
+
     seq.setup = function(eventId, phaseName, endFunc = null) {
         const commonEvent = $dataCommonEvents[eventId];
         Game_Interpreter.prototype.setup.call(this, commonEvent.list, eventId);
         this._endFunc = endFunc;
         this._phaseName = phaseName;
+        this._ending = false;
     }
 
     seq.command357 = function(params) {
-        TSBSCommand = params[0] == _.pluginName
-        if (TSBSCommand && this._battler["TSBS_" + params[1]] !== undefined){
-            args = params[3];
-            args.sequencer = this;
-            return this._battler["TSBS_" + params[1]](params[3]);
+        TSBSCommand = params[0] == _.pluginName || _.addons.some(a => a === params[0])
+        if (TSBSCommand){
+            commandName = params[1]
+            if (_.cmd[commandName] !== undefined){
+                args = params[3];
+                args.sequencer = this;
+                _.cmd[commandName].call(this._battler,(params[3]));
+                return true
+            }
         }
         args = params[3];
         args.battler = this._battler;
         return Game_Interpreter.prototype.command357.call(this, params);
     }
+    //#endregion
+    //=============================================================================================
+
+    //=============================================================================================
+    //#region Game_Action overrides
+    //---------------------------------------------------------------------------------------------
+    _.action = {}
+    act = Game_Action.prototype
+    
+    // Override list
+    _.action.item = act.item
+    _.action.isSkill = act.isSkill
+    _.action.isItem = act.isItem
+
+    // Yeah, I don't want my item being controlled by ID. Why not an actual item rather than id?
+    act.item = function() {
+        var subj = this.subject();
+        if (subj._itemInUse !== null){
+            return subj._itemInUse
+        }
+        return _.action.item.call(this);
+    };
+    
+    act.isSkill = function() {
+        var subj = this.subject();
+        if (subj._itemInUse !== null){
+            return subj._itemInUse._dataClass === "skill"
+        }
+        return _.action.isSkill.call(this);
+    };
+    
+    act.isItem = function() {
+        var subj = this.subject();
+        if (subj._itemInUse !== null){
+            return subj._itemInUse._dataClass === "item"
+        }
+        return _.action.isItem.call(this);
+    };
     //#endregion
     //=============================================================================================
 
@@ -519,11 +702,16 @@ TSBS.init = function(){
         this.clearTSBS()
     }
 
+    bb.actionPrepare = function(targets, item){
+        this._targetArray = targets
+        this._oriTargets = targets
+        this._itemInUse = JsonEx.makeDeepCopy(item)
+    }
+
     bb.clearTSBS = function(){
         this._sequencer = null
         this._sprite = null
         this._animCell = 0
-        this._sheetNum = 0
         this._itemInUse = null
         this._oriTargets = []
         this._targetArray = []
@@ -566,62 +754,48 @@ TSBS.init = function(){
         }
     }
 
+    bb.clearActionSequence = function(){
+        this._itemInUse = null
+        this._oriTargets = []
+        this._targetArray = []
+    }
+
+    bb.performActionSequence = function(commonEvent, endFunc = null){
+        this._sequencer.setup(commonEvent, "action", endFunc)
+    }
+
+    bb.doingAction = function(){
+        return this._sequencer._phaseName == "action" && !this._sequencer.ending()
+    }
     //#endregion
     //============================================================================================
 
     //============================================================================================
-    //#region Sequence Functions 
+    //#region Game_Actor
     //---------------------------------------------------------------------------------------------
-    bb.TSBS_pose = function(args){
-        console.log(args)
-        //this._sheetNum = parseInt(args.sheetnum);
-        this._animCell = parseInt(args.frame);
-        args.sequencer.wait(args.wait);
-        return true;
+    _.actor = {}
+    let ga = Game_Actor.prototype
+
+    ga.initHomePos = function() {
+        let pos = this.index()
+        this._homeX = _.actorPos[pos].x
+        this._homeY = _.actorPos[pos].y
     }
 
-    bb.TSBS_move = function(args){
-        var spr = this.sprite();
-        var targX = parseInt(args.x);
-        var targY = parseInt(args.y);
-        switch(args.to){
-            case "Target":
-                targX += this._targetArray.reduce((total, trg)=>{ return trg.sprite().x + total}, 0)
-                targY += this._targetArray.reduce((total, trg)=>{ return trg.sprite().y + total}, 0)
-                break;
-            case "Slide":
-                targX += spr.x;
-                targY += spr.y;
-                break;
-            case "Home":
-                targX += this.homePos().x;
-                targY += this.homePos().y;
-                break;
+    ga.homePos = function() {
+        return {
+            x: this._homeX,
+            y: this._homeY
         }
-        spr.startMove(targX, targY, args.dur, args.jump)
     }
 
-    bb.TSBS_showAnim = function(args){
-
-    }
-
-    bb.TSBS_cast = function(args){
-
-    }
-
-    bb.TSBS_actionEffect = function(args){
-
-    }
-
-    bb.TSBS_actionEffectMod = function(args){
-
-    }
-
-    bb.TSBS_changeTarget = function(args){
-
+    _.actor.onBattleStart = ga.onBattleStart
+    ga.onBattleStart = function(){
+        this.initHomePos()
+        _.actor.onBattleStart.call(this)
     }
     //#endregion
-    //=============================================================================================
+    //============================================================================================
 
     //============================================================================================= 
     //#region Sprite_Battler
@@ -632,32 +806,61 @@ TSBS.init = function(){
     _.spriteBattler.initMembers = sb.initMembers
     sb.initMembers = function(){
         _.spriteBattler.initMembers.call(this)
-        this._maxDuration = 0;
-        this._jumpPower = 0;
+        this._usedFunc = _.linearFunc;  // Move function
+        this._tsbsMoveDuration = 0;     // Current duration (count down)
+        this._maxDuration = 0;          // Maximum duration
+        this._jumpPower = 0;            // Jump force
+        this._displayX = 0;             // Sprite current display X
+        this._displayY = 0;             // Sprite current display Y
+        this._targX = 0;                // Target X axis
+        this._targY = 0;                // Target Y axis
+        this._oriX = 0;                 // Original X before moving
+        this._oriY = 0;                 // Original Y before moving
     }
 
-    _.spriteBattler.startMove = sb.startMove
-    sb.startMove = function(x, y, duration, jump = 0){
+    _.spriteBattler.setHome = sb.setHome
+    sb.setHome = function(x, y) {
+        this._displayX = x
+        this._displayY = y
+        _.spriteBattler.setHome.call(this, x, y)
+    };
+
+    _.linearFunc = function(ori, target, time, maxTime){
+        return ori + ((target - ori) * time/maxTime);
+    }
+    sb.updatePosition = function() {
+        if (this._tsbsMoveDuration > 0) {
+            const time = this._maxDuration - this._tsbsMoveDuration
+            this._displayX = this._usedFunc(this._oriX, this._targX, time, this._maxDuration)
+            this._displayY = this._usedFunc(this._oriY, this._targY, time, this._maxDuration)
+            this._tsbsMoveDuration -= 1;
+        }
+        // Offset is preserved for the default move function
+        // Home position is not used
+        this.x = this._displayX + this._offsetX;
+        this.y = this._displayY + this._offsetY - this.jumpHeight();
+    };
+
+    sb.goto = function(x, y, duration, jump = 0, funcName = "linearFunc"){
         this._maxDuration = duration;
         this._jumpPower = jump;
-        _.spriteBattler.startMove.call(this,x,y,duration);
+        this._targX = x;
+        this._targY = y;
+        this._oriX = this._displayX;
+        this._oriY = this._displayY;
+        this._tsbsMoveDuration = duration;
+        this._usedFunc = _[funcName];
     }
 
     sb.jumpHeight = function(){
-        if (this._movementDuration === 0) {
+        if (this._tsbsMoveDuration === 0) {
             return 0
         }
-        let time = this._maxDuration - this._movementDuration;
+        let time = this._maxDuration - this._tsbsMoveDuration
         let gravity = this._jumpPower/(this._maxDuration/2);
         let height = (this._jumpPower * time) - (gravity * time * (time + 1) / 2);
         return Math.max(0, height);
     }
-
-    _.spriteBattler.updatePos = sb.updatePosition
-    sb.updatePosition = function() {
-        _.spriteBattler.updatePos.call(this);
-        this._y += jumpHeight()
-    };
     //#endregion
     //============================================================================================= 
 
@@ -665,18 +868,25 @@ TSBS.init = function(){
     //#region Sprite_Actor
     //---------------------------------------------------------------------------------------------
     _.spriteActor = {}
-    let sa = Sprite_Actor.prototype
+    sa = Sprite_Actor.prototype
 
-    _.spriteActor.init = sa.initialize
-    sa.initialize = function(battler) {
-        _.spriteActor.init.call(this, battler);
-        _.actorSprites[battler._actorId] = this;
+    _.spriteActor.setBattler = sa.setBattler
+    sa.setBattler = function(battler) {
+        _.spriteActor.setBattler.call(this, battler);
+        if (battler !== undefined){
+            _.actorSprites[battler._actorId] = this;
+        }
     };
     
     // Delete update motion. I don't need it
     sa.updateMotion = function() {
     };
     
+    sa.updateShadow = function() {
+        this._shadowSprite.visible = !! this._actor;
+        this._shadowSprite.y = -2 + this.jumpHeight();
+    };
+
     // Overwrite update frame
     sa.updateFrame = function() {
         Sprite_Battler.prototype.updateFrame.call(this);
@@ -694,19 +904,108 @@ TSBS.init = function(){
     //============================================================================================= 
 
     //============================================================================================= 
+    //#region Sprite_Enemy
+    //---------------------------------------------------------------------------------------------
+    _.spriteEnemy = {}
+    se = Sprite_Enemy.prototype
+
+    _.spriteEnemy.setBattler = se.setBattler
+    se.setBattler = function(battler) {
+        _.spriteEnemy.setBattler.call(this, battler);
+        if (battler !== undefined){
+            _.enemySprites[battler.index()] = this;
+        }
+    };
+    //#endregion
+    //============================================================================================= 
+
+    //============================================================================================= 
+    //#region Spriteset_Battle
+    //---------------------------------------------------------------------------------------------
+    _.sprset = {}
+    sset = Spriteset_Battle.prototype
+
+    _.sprset.isBusy = sset.isBusy
+    sset.isBusy = function() {
+        return _.sprset.isBusy.call(this) || _.isSequenceBusy();
+    };
+
+    sset.animationBaseDelay = function() {
+        return 0;
+    };
+    //#endregion
+    //============================================================================================= 
+
+    //============================================================================================= 
+    //#region Window_BattleLog (for sequence) 
+    //---------------------------------------------------------------------------------------------
+    _.wblog = {}
+    wb = Window_BattleLog.prototype;
+
+    // Refactor start action with my own
+    wb.startAction = function(subject, action, targets) {
+        const item = action.item();
+        this.displayAction(subject, item);
+        this.push("tsbs_actionMain", subject, targets, item);
+        this.push("tsbs_actionPost", subject, item);
+        this.push("tsbs_actionEnd", subject, item);
+    }
+
+    wb.tsbs_actionMain = function(subject, targets, item){
+        _.targets = targets.clone();
+
+        // Apply target substitute here (later)
+        if(targets.length == 1){
+            // Substitute only possible if not AoE attack
+            let t = targets[0]
+
+        }
+        // Probably roll the magic reflect here
+        subject.actionPrepare(targets, item)
+        subject.performActionSequence(10, null);
+        this.setWaitMode("Sequence");
+    }
+
+    wb.tsbs_actionPost = function(subject, item){
+        // Probably, apply magic reflect here
+        var endFunc = function() { this.startIdleMotion() }.bind(subject)
+        subject.performActionSequence(5, endFunc);
+        this.setWaitMode("Sequence");
+    }
+
+    wb.tsbs_actionEnd = function(subject, item){
+        subject.clearActionSequence()
+        for(var target of _.targets){
+            target.startIdleMotion();
+            //target.returnHome();
+            //target.checkCollapse();
+        }
+        _.target = [];
+    }
+
+    _.wblog.updateWait = wb.updateWaitMode
+    wb.updateWaitMode = function(){
+        if (this._waitMode === "Sequence"){
+            return _.isSequenceBusy();
+        }
+        return _.wblog.updateWait.call(this);
+    }
+    //#endregion
+    //=============================================================================================
+
+    //============================================================================================= 
     // Scene Update
     //---------------------------------------------------------------------------------------------
     _.scene_battle_update = Scene_Battle.prototype.update;
     Scene_Battle.prototype.update = function() {
         _.scene_battle_update.call(this);
-        $gameParty.updateSequencer();
-        $gameTroop.updateSequencer();
+        $gameActors.actor(1).updateSequencer();
+        //$gameParty.updateSequencer();
+        //$gameTroop.updateSequencer();
     };
 
     Game_Unit.prototype.updateSequencer = function(){
-        for(member in this.members()){
-            member.updateSequencer();
-        }
+        this.members().forEach(m => m.updateSequencer());
     }
 }
 
