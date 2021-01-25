@@ -430,35 +430,85 @@ TSBS.init = function(){
     JSON.parse(this._params.ActorPos).forEach(innerJson => {
         pos = JSON.parse(innerJson)
         obj = {
-            x: parseInt(pos.X),
-            y: parseInt(pos.Y)
+            x: Number(pos.X),
+            y: Number(pos.Y)
         }
         this._actorPos.push(obj);
      })
 
-     this._maxRow = parseInt(this._params.SheetRow)
-     this._maxCol = parseInt(this._params.SheetColumn)
-     this._sequenceList = {
-         idle: parseInt(this._params.Idle),
-         damaged: parseInt(this._params.Damaged),
-         pinch: parseInt(this._params.Pinch),
-         evade: parseInt(this._params.Evade),
-         return: parseInt(this._params.Return),
-         dead: parseInt(this._params.Dead),
-         victory: parseInt(this._params.Victory),
-         escape: parseInt(this._params.Escape),
-         intro: parseInt(this._params.Intro),
-         preintro: parseInt(this._params.PreIntro),
-         skill: parseInt(this._params.Skill),
-         item: parseInt(this._params.Item),
-         collapse: parseInt(this._params.Collapse)
-     }
-     //#endregion
-     //============================================================================================
+     this._maxRow = Number(this._params.SheetRow)
+     this._maxCol = Number(this._params.SheetColumn)
 
-     //============================================================================================
-     //#region Global function
-     //---------------------------------------------------------------------------------------------
+     // Sequence template
+     this._sequenceList = {
+         idle: Number(this._params.Idle),
+         damaged: Number(this._params.Damaged),
+         pinch: Number(this._params.Pinch),
+         evade: Number(this._params.Evade),
+         post: Number(this._params.Return),
+         dead: Number(this._params.Dead),
+         victory: Number(this._params.Victory),
+         escape: Number(this._params.Escape),
+         intro: Number(this._params.Intro),
+         preintro: Number(this._params.PreIntro),
+         skill: Number(this._params.Skill),
+         item: Number(this._params.Item),
+         collapse: Number(this._params.Collapse),
+         motion: 0,
+     }
+    //#endregion
+    //============================================================================================
+
+    //============================================================================================
+    //#region Notetag loading
+    //--------------------------------------------------------------------------------------------
+
+    this._tagIdle       = /<tsbs[\s_]+idle\s*:\s*(\d+)>/i
+    this._tagDamaged    = /<tsbs[\s_]+damaged\s*:\s*(\d+)>/i
+    this._tagPinch      = /<tsbs[\s_]+pinch\s*:\s*(\d+)>/i
+    this._tagEvade      = /<tsbs[\s_]+evade\s*:\s*(\d+)>/i
+    this._tagPost       = /<tsbs[\s_]+post\s*:\s*(\d+)>/i
+    this._tagDead       = /<tsbs[\s_]+dead\s*:\s*(\d+)>/i
+    this._tagVictory    = /<tsbs[\s_]+victory\s*:\s*(\d+)>/i
+    this._tagIntro      = /<tsbs[\s_]+intro\s*:\s*(\d+)>/i
+    this._tagPreintro   = /<tsbs[\s_]+preintro\s*:\s*(\d+)>/i
+    this._tagAction     = /<tsbs[\s_]+action\s*:\s*(\d+)>/i
+    this._tagCollapse   = /<tsbs[\s_]+collapse\s*:\s*(\d+)>/i
+    this._tagMotion     = /<tsbs[\s_]+motion\*s:\s*(\d+)>/i
+
+    this._regexTag = /<tsbs[\s_]+(.+)\s*:\s*(\d+)>/i
+    
+    this.dbLoaded = DataManager.isDatabaseLoaded;
+    DataManager.isDatabaseLoaded = function(){
+        if (!_.dbLoaded.call(this)) {return false};
+        if (!_.isLoaded) {
+            let database =  [$dataActors, $dataClasses, $dataWeapons, $dataArmors, $dataStates, $dataItems, $dataEnemies];
+            database.forEach(function(data){
+                data.forEach(function(db){
+                    if(db === null){return};
+                    _.loadTSBS(db);
+                })
+            })
+            _.isLoaded = true;
+        }
+        return true;
+    }
+
+    this.loadTSBS = (db) => {
+        db._sequenceList = Object.assign({}, TSBS._sequenceList)
+        let notedata = db.note.split(/[\r\n]+/);
+        notedata.forEach(line => {
+            if(line.match(TSBS._regexTag)){
+                let name = String(RegExp.$1)
+            }
+        })
+    }
+
+    //============================================================================================
+
+    //============================================================================================
+    //#region Global function
+    //--------------------------------------------------------------------------------------------
     // Global function to check if any battler is doing action sequence
     this.isSequenceBusy = function(){
         let allBattlers = $gameParty.allMembers().concat($gameTroop.members())
@@ -501,14 +551,14 @@ TSBS.init = function(){
     let cmd = this._cmd
 
     cmd.pose = function(args){
-        this._animCell = parseInt(args.frame);
+        this._animCell = Number(args.frame);
         args.sequencer.wait(args.wait);
     }
 
     cmd.move = function(args){
         var spr = this.sprite();
-        var targX = parseInt(args.x);
-        var targY = parseInt(args.y);
+        var targX = Number(args.x);
+        var targY = Number(args.y);
         switch(args.to){
             case "Target":
                 targX += this._targetArray.reduce((total, trg)=>{ return trg.sprite().x + total}, 0)
@@ -527,7 +577,7 @@ TSBS.init = function(){
     }
 
     cmd.showAnim = function(args){
-        let animId = parseInt(args.anim);
+        let animId = Number(args.anim);
         if (animId === 0){
             animId = this._itemInUse.animationId;
             if(animId === -1){
@@ -539,7 +589,7 @@ TSBS.init = function(){
     }
 
     cmd.cast = function(args){
-        let animId = parseInt(args.anim);
+        let animId = Number(args.anim);
         if (animId === 0){
             animId = this._itemInUse.animationId;
             if(animId === -1){
@@ -569,6 +619,9 @@ TSBS.init = function(){
     }
 
     cmd.forceResult = function(args){
+        if (this.noTarget()){
+            return;
+        }
         var result;
         switch(args.value){
             case "Roll":
@@ -584,15 +637,34 @@ TSBS.init = function(){
         switch(args.opt){
             case "Hit":
                 if(result === 2){
-                    let roll = Math.random() <= this.item().successRate *  0.01 * this.subject().hit;
+                    let roll = Math.random() <= this._itemInUse.successRate *  0.01 * this.hit;
                     result = (roll ? 1 : -1 )
                 }
                 this._forceResult.hit = result;
                 break
             case "Evade":
+                if(result === 2){
+                    if(this._targetArray.length > 1){
+                        result = 0;
+                    }else{
+                        let t = this._targetArray[0];
+                        let roll = TSBS._action.aliasEva(t) >= Math.random;
+                        result = (roll ? 1 : -1)
+                    }
+                }
                 this._forceResult.evade = result;
                 break
             case "Critical":
+                if(result === 2){
+                    if(this._targetArray.length > 1){
+                        let roll = this.cri >= Math.random()
+                        result = (roll ? 1 : -1 )
+                    }else{
+                        let t = this._targetArray[0];
+                        let roll = TSBS._action.aliasCri(t) >= Math.random;
+                        result = (roll ? 1 : -1)
+                    }
+                }
                 this._forceResult.critical = result;
                 break;
             default:
@@ -789,6 +861,9 @@ TSBS.init = function(){
         }
         return protoAct.itemCri.call(this, target)
     };
+
+    act.aliasEva = protoAct.itemEva
+    act.aliasCri = protoAct.itemCri
     //#endregion
     //=============================================================================================
 
@@ -817,10 +892,15 @@ TSBS.init = function(){
         this.clearTSBS()
     }
 
+    bb.noTarget = function(){
+        return this._targetArray.length === 0
+    }
+
     bb.actionPrepare = function(targets, item){
         this._targetArray = targets
         this._oriTargets = targets
         this._itemInUse = JsonEx.makeDeepCopy(item)
+        this._itemInUse._dataClass = (DataManager.isSkill(item) ? "skill" : "item")
     }
 
     bb.clearTSBS = function(){
