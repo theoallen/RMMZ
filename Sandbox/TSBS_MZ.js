@@ -150,13 +150,13 @@ the delay of each frame and all the timing on your own.
 @text Change Target
 @desc Change the target scope. Condition parameter requires a valid JS syntax.
 
-@arg type
+@arg pov
 @type select
-@default Absolute
-@text Type
-@option Relative
-@option Absolute
-@desc Relative = If you select allies while the sequence is used by enemy, it will select the troop.
+@default First Person
+@text Point of View
+@option First Person
+@option Third Person
+@desc First Person = If you select allies while the sequence is used by enemy, it will select the troop.
 
 @arg opt
 @type select
@@ -175,9 +175,15 @@ the delay of each frame and all the timing on your own.
 @option Self
 @desc Switch the target
 
-@arg cond
+@arg dead
+@type boolean
+@text Include dead battler?
+@default false
+@desc Determine if the scope also include dead battler.
+
+@arg filter
 @type note
-@text Condition
+@text Filter
 @desc Filters the target scope. Use 'target' to refers to the target candidate to filter. Must return true/false
 
 @command state
@@ -202,15 +208,6 @@ the delay of each frame and all the timing on your own.
 @text Action
 @desc Select the common event for the target.
 
-@command aftimage
-@text Afterimage
-@desc Toggle the ffterimage/mirage effect on the subject
-
-@arg toggle
-@text Toggle
-@desc Toggle on/off
-@type boolean
-
 @command visible
 @text Visible
 @desc Toggle the subject to be visible or not
@@ -230,62 +227,6 @@ the delay of each frame and all the timing on your own.
 @text toggle
 @on Flips
 @off Unflips
-
-@command rotation
-@text Rotation
-@desc Spin the battler
-
-@arg type
-@type select
-@option Spin
-@option Rotate
-@default Spin
-@desc Spin = continuous | Rotate = rotate to target angle
-
-@arg power
-@type number
-@text Spin Power
-@default 0
-@desc Spin power/Target angle
-
-@arg dur
-@type number
-@text Duration
-@desc Duration of the spin/how much time required to rotate.
-@min 0
-@default 0
-
-@command stopRotation
-@text Stop Rotation
-@desc Stop the rotation
-
-@arg endAngle
-@type number
-@default 0
-@text End Angle
-@desc Set the ending angle of the battler
-
-@command focus
-@text Focus
-@desc Hide the battlers other than the subject and the target.
-
-@arg dur
-@type number
-@min 1
-@default 0
-@text Duration
-@desc How many frames until it fully focused
-
-@command unfocus
-@text Unfocus
-@desc Show the battlers after being hidden by Focus command.
-
-@arg unfocus
-@type number
-@min 1
-@default 0
-@text Duration
-@desc How many frames until it fully unfocused
 
 @command check collapse
 @text Check Collapse
@@ -316,14 +257,14 @@ the delay of each frame and all the timing on your own.
 @param div1
 @text ---------------------------
 @param General Options
-@param Actor Pos
+@param ActorPos
 @parent General Options
 @type struct<actorpos>[]
 @text Actor Position
 @desc This also determine the maximum battle members.
-@default ["{\"X\":\"400\",\"Y\":\"350\"}","{\"X\":\"410\",\"Y\":\"375\"}","{\"X\":\"420\",\"Y\":\"390\"}"]
+@default ["{\"X\":\"600\",\"Y\":\"280\"}","{\"X\":\"632\",\"Y\":\"368\"}","{\"X\":\"664\",\"Y\":\"446\"}"]
 
-@param Sheet Row
+@param SheetRow
 @parent General Options
 @type number
 @min 1
@@ -331,13 +272,21 @@ the delay of each frame and all the timing on your own.
 @text Max Sheet Row
 @desc Maximum sheet row 
 
-@param Sheet Column
+@param SheetColumn
 @parent General Options
 @type number
 @min 1
 @default 4
 @text Max Sheet Row
 @desc Maximum sheet row
+
+@param ReverseCoordinate
+@parent General Option
+@type boolean
+@default true
+@text Reverse Coordinate
+@desc Reverse coordinate for enemies (so that you could use the same sequence for enemies).
+If set to true, negative coordinate (for slide command) means it goes to the right.
 
 @param div2
 @text ---------------------------
@@ -396,23 +345,29 @@ the delay of each frame and all the timing on your own.
 @type common_event
 @default 0
 
-@param Pre-Intro
+@param PreIntro
 @parent Default Motion
 @text Pre-intro
 @type common_event
 @default 0
 
-@param Default skill action
+@param Skill
 @parent Default Motion
 @text Default Skill motion
 @type common_event
 @default 10
 
-@param Default item use
+@param Item
 @parent Default Motion
-@text Default Skill motion
+@text Default Item motion
 @type common_event
 @default 11
+
+@param Collapse
+@parent Default Motion
+@text Collapse Motion
+@type common_event
+@default 0
 
 */
 
@@ -431,7 +386,7 @@ the delay of each frame and all the timing on your own.
 @desc Y position of the n-th actor
 @default 0
 */
-var TSBS = {}
+const TSBS = {}
 
 // Borrowing event interpreter for sequencer
 TSBS.Sequence_Interpreter = function(battler, depth){
@@ -441,48 +396,56 @@ TSBS.Sequence_Interpreter = function(battler, depth){
 TSBS.Sequence_Interpreter.prototype = Object.create(Game_Interpreter.prototype);
 TSBS.Sequence_Interpreter.prototype.constructor = TSBS.Sequence_Interpreter
 
+// Handles action effect application
+TSBS.Action = function() {
+    Game_Action.prototype.initialize.call(this,null, false);
+}
+TSBS.Action.prototype = Object.create(Game_Action.prototype);
+TSBS.Action.prototype.constructor = TSBS.Action
+
 //-------------------------------------------------------------------------------------------------
 // IIFE alternative, because I have encapsulation
 // I know you hate this, but I do what I wanna do and I don't care
 //-------------------------------------------------------------------------------------------------
 TSBS.init = function(){
-    this.pluginName = "TSBS_MZ"
+    this._pluginName = "TSBS_MZ"
 
-    this.addons = []        // Store addons name
-    this.actorSprites = {}  // Store actor sprite reference
-    this.enemySprites = {}  // Store enemy sprite reference
-    this.targets = []       // Store all affected battlers
-    this.actorPos = []      // Store actor home position parameter
+    this._addons = []        // Store addons name
+    this._actorSprites = {}  // Store actor sprite reference
+    this._enemySprites = {}  // Store enemy sprite reference
+    this._targets = []       // Store all affected battlers
+    this._actorPos = []      // Store actor home position parameter
 
     let _ = this;
     //=============================================================================================
     //#region Loading parameters
     //---------------------------------------------------------------------------------------------
-    _.params = PluginManager.parameters(this.pluginName)
-    JSON.parse(_.params["Actor Pos"]).forEach(innerJson => {
+    this._params = PluginManager.parameters(this._pluginName)
+    JSON.parse(this._params.ActorPos).forEach(innerJson => {
         pos = JSON.parse(innerJson)
         obj = {
             x: parseInt(pos.X),
             y: parseInt(pos.Y)
         }
-        _.actorPos.push(obj);
+        this._actorPos.push(obj);
      })
 
-     this._maxRow = parseInt(this.params["Sheet Row"])
-     this._maxCol = parseInt(this.params["Sheet Column"])
+     this._maxRow = parseInt(this._params.SheetRow)
+     this._maxCol = parseInt(this._params.SheetColumn)
      this._sequenceList = {
-         idle: parseInt(this.params.Idle),
-         damaged: parseInt(this.params.Damaged),
-         pinch: parseInt(this.params.Pinch),
-         evade: parseInt(this.params.Evade),
-         return: parseInt(this.params.Return),
-         dead: parseInt(this.params.Dead),
-         victory: parseInt(this.params.Victory),
-         escape: parseInt(this.params.Escape),
-         intro: parseInt(this.params.Intro),
-         preintro: parseInt(this.params.PreIntro),
-         skill: parseInt(this.params.Skill),
-         item: parseInt(this.params.Item)
+         idle: parseInt(this._params.Idle),
+         damaged: parseInt(this._params.Damaged),
+         pinch: parseInt(this._params.Pinch),
+         evade: parseInt(this._params.Evade),
+         return: parseInt(this._params.Return),
+         dead: parseInt(this._params.Dead),
+         victory: parseInt(this._params.Victory),
+         escape: parseInt(this._params.Escape),
+         intro: parseInt(this._params.Intro),
+         preintro: parseInt(this._params.PreIntro),
+         skill: parseInt(this._params.Skill),
+         item: parseInt(this._params.Item),
+         collapse: parseInt(this._params.Collapse)
      }
      //#endregion
      //============================================================================================
@@ -491,14 +454,14 @@ TSBS.init = function(){
      //#region Global function
      //---------------------------------------------------------------------------------------------
     // Global function to check if any battler is doing action sequence
-    _.isSequenceBusy = function(){
+    this.isSequenceBusy = function(){
         let allBattlers = $gameParty.allMembers().concat($gameTroop.members())
         return allBattlers.some(battler => battler.doingAction())
     }
 
     // Array function, to remove duplicate, use it with binding.
     // Shamelessly taken from stackoverflow
-    _.uniq = function() {
+    this.uniq = function() {
         var a = this.concat();
         for(var i=0; i<a.length; ++i) {
             for(var j=i+1; j<a.length; ++j) {
@@ -508,6 +471,15 @@ TSBS.init = function(){
         }
         return a;
     };
+
+    // Linear movement function
+    this.linearFunc = function(ori, target, time, maxTime){
+        return ori + ((target - ori) * time/maxTime);
+    }
+
+    this.sample = function(array){
+        return array[Math.floor(Math.random() * array.length)]
+    }
     //#endregion
     //=============================================================================================
 
@@ -519,8 +491,8 @@ TSBS.init = function(){
     //
     // Example: TSBS.cmd.cameraMove(args)
     //---------------------------------------------------------------------------------------------
-    _.cmd = {}
-    let cmd = _.cmd
+    this._cmd = {}
+    let cmd = this._cmd
 
     cmd.pose = function(args){
         this._animCell = parseInt(args.frame);
@@ -573,11 +545,15 @@ TSBS.init = function(){
     }
 
     cmd.actionEffect = function(args){
+        console.log(this)
         this._targetArray.forEach(target => {
-            BattleManager._action.apply(target)
-            // this.currentAction().apply(target)
+            TSBS._action.setSubject(this);
+            TSBS._action.apply(target);
             if (target.shouldPopupDamage()){
                 target.startDamagePopup();
+            }
+            if(this.shouldPopupDamage()){
+                this.startDamagePopup();
             }
         })
     }
@@ -587,7 +563,74 @@ TSBS.init = function(){
     }
 
     cmd.changeTarget = function(args){
-        
+        subj = this
+        var determineUnit = (isOpponent) => {
+            if(args.pov === "First Person"){
+                if(isOpponent){
+                    return subj.opponentsUnit();
+                }else{
+                    return subj.friendsUnit();
+                }
+            }else{
+                if(isOpponent){
+                    return $gameTroop
+                }else{
+                    return $gameParty
+                }
+            }
+        }
+        switch(args.opt){
+            case "Revert":
+                this._targetArray = this._oriTargets;
+                this._newTargetValid = true;
+                break;
+            case "All":
+                this._targetArray = $gameParty.members().concat($gameTroop.members())
+                this._newTargetValid = true; 
+                break;
+            case "All (Except user)":
+                this._targetArray = $gameParty.members().concat($gameTroop.members()).filter(t => {t !== this})
+                this._newTargetValid = true; 
+                break;
+            case "All Enemies":
+                this._targetArray = determineUnit(true).members();
+                this._newTargetValid = true; 
+                break;
+            case "All Allies":
+                this._targetArray = determineUnit(false).members();
+                this._newTargetValid = true; 
+                break;
+            case "Other Enemies":
+                this._targetArray = determineUnit(true).members().filter(t => { return !this._targetArray.includes(t)});
+                this._newTargetValid = this._targetArray.length > 0; 
+                break;
+            case "Other Allies":
+                this._targetArray = determineUnit(false).members().filter(t => { return !this._targetArray.includes(t)});
+                this._newTargetValid = this._targetArray.length > 0; 
+                break;
+            case "Random Enemy (w/ aggro)":
+                this._targetArray = [determineUnit(true).randomTarget()];
+                this._newTargetValid = true; 
+                break;
+            case "Random Enemy (w/o aggro)":
+                this._targetArray = [TSBS.sample(determineUnit(true).members())]
+                this._newTargetValid = true; 
+                break;
+            case "Random Ally":
+                this._targetArray = [TSBS.sample(determineUnit(false).members())]
+                this._newTargetValid = true; 
+                break;
+            case "Self":
+                this._targetArray = [this];
+                this._newTargetValid = true;
+                break;
+        }
+        // if(args.dead === "false"){
+        //     this._targetArray = this._targetArray.filter(t => {t.isAlive()})
+        //     this._newTargetValid = this._targetArray.length > 0
+        // }
+        TSBS._targets = TSBS._targets.concat(this._targetArray);
+        TSBS._targets = TSBS.uniq.call(TSBS._targets);
     }
     //#endregion
     //=============================================================================================
@@ -622,13 +665,13 @@ TSBS.init = function(){
     }
 
     seq.command357 = function(params) {
-        TSBSCommand = params[0] == _.pluginName || _.addons.some(a => a === params[0])
+        TSBSCommand = params[0] == TSBS._pluginName || TSBS._addons.some(a => a === params[0])
         if (TSBSCommand){
             commandName = params[1]
-            if (_.cmd[commandName] !== undefined){
+            if (TSBS._cmd[commandName] !== undefined){
                 args = params[3];
                 args.sequencer = this;
-                _.cmd[commandName].call(this._battler,(params[3]));
+                TSBS._cmd[commandName].call(this._battler,(params[3]));
                 return true
             }
         }
@@ -641,14 +684,17 @@ TSBS.init = function(){
 
     //=============================================================================================
     //#region Game_Action overrides
+    // I'm doing this really just because I only need the apply function, and not the rest.
     //---------------------------------------------------------------------------------------------
-    _.action = {}
-    act = Game_Action.prototype
-    
-    // Override list
-    _.action.item = act.item
-    _.action.isSkill = act.isSkill
-    _.action.isItem = act.isItem
+    proto = Game_Action.prototype
+    act = TSBS.Action.prototype
+
+    // Subject is to be determined later
+    act.setSubject = function(subject){
+        if(subject !== null){
+            proto.setSubject.call(this, subject)
+        }
+    }
 
     // Yeah, I don't want my item being controlled by ID. Why not an actual item rather than id?
     act.item = function() {
@@ -656,7 +702,7 @@ TSBS.init = function(){
         if (subj._itemInUse !== null){
             return subj._itemInUse
         }
-        return _.action.item.call(this);
+        return proto.item.call(this);
     };
     
     act.isSkill = function() {
@@ -664,7 +710,7 @@ TSBS.init = function(){
         if (subj._itemInUse !== null){
             return subj._itemInUse._dataClass === "skill"
         }
-        return _.action.isSkill.call(this);
+        return proto.isSkill.call(this);
     };
     
     act.isItem = function() {
@@ -672,8 +718,10 @@ TSBS.init = function(){
         if (subj._itemInUse !== null){
             return subj._itemInUse._dataClass === "item"
         }
-        return _.action.isItem.call(this);
+        return proto.isItem.call(this);
     };
+    this._action = new TSBS.Action();
+
     //#endregion
     //=============================================================================================
 
@@ -709,14 +757,14 @@ TSBS.init = function(){
     }
 
     bb.clearTSBS = function(){
-        this._sequencer = null
-        this._sprite = null
-        this._animCell = 0
-        this._itemInUse = null
-        this._oriTargets = []
-        this._targetArray = []
-        this._flip = false
-        this._forceResult = {
+        this._sequencer = null          // Store the animation sequencer
+        this._animCell = 0              // Store the current shown sheet frame
+        this._itemInUse = null          // Store the currently used item/skill
+        this._oriTargets = []           // Store the original target
+        this._targetArray = []          // Store the current target
+        this._flip = false              // Determine if the battler image is flipped
+        this._newTargetValid = false    // Determine if getting a new target is success
+        this._forceResult = {           // Store the force result
             "hit": false,
             "miss": false,
             "evade": false,
@@ -740,9 +788,9 @@ TSBS.init = function(){
 
     bb.sprite = function(){
         if (this.isActor()){
-            return _.actorSprites[this._actorId];
+            return _._actorSprites[this._actorId];
         }else{
-            return _.enemySprites[this.index()];
+            return _._enemySprites[this.index()];
         }
     }
 
@@ -778,8 +826,8 @@ TSBS.init = function(){
 
     ga.initHomePos = function() {
         let pos = this.index()
-        this._homeX = _.actorPos[pos].x
-        this._homeY = _.actorPos[pos].y
+        this._homeX = _._actorPos[pos].x
+        this._homeY = _._actorPos[pos].y
     }
 
     ga.homePos = function() {
@@ -825,15 +873,16 @@ TSBS.init = function(){
         _.spriteBattler.setHome.call(this, x, y)
     };
 
-    _.linearFunc = function(ori, target, time, maxTime){
-        return ori + ((target - ori) * time/maxTime);
-    }
     sb.updatePosition = function() {
         if (this._tsbsMoveDuration > 0) {
             const time = this._maxDuration - this._tsbsMoveDuration
             this._displayX = this._usedFunc(this._oriX, this._targX, time, this._maxDuration)
             this._displayY = this._usedFunc(this._oriY, this._targY, time, this._maxDuration)
             this._tsbsMoveDuration -= 1;
+            if (this._tsbsMoveDuration === 0){
+                this._displayX = this._targX;
+                this._displayY = this._targY;
+            }
         }
         // Offset is preserved for the default move function
         // Home position is not used
@@ -874,7 +923,7 @@ TSBS.init = function(){
     sa.setBattler = function(battler) {
         _.spriteActor.setBattler.call(this, battler);
         if (battler !== undefined){
-            _.actorSprites[battler._actorId] = this;
+            _._actorSprites[battler._actorId] = this;
         }
     };
     
@@ -913,7 +962,7 @@ TSBS.init = function(){
     se.setBattler = function(battler) {
         _.spriteEnemy.setBattler.call(this, battler);
         if (battler !== undefined){
-            _.enemySprites[battler.index()] = this;
+            _._enemySprites[battler.index()] = this;
         }
     };
     //#endregion
@@ -930,7 +979,12 @@ TSBS.init = function(){
         return _.sprset.isBusy.call(this) || _.isSequenceBusy();
     };
 
+    // Delays are silly, why would they do this tbh ...
     sset.animationBaseDelay = function() {
+        return 0;
+    };
+
+    sset.animationNextDelay = function() {
         return 0;
     };
     //#endregion
@@ -952,7 +1006,7 @@ TSBS.init = function(){
     }
 
     wb.tsbs_actionMain = function(subject, targets, item){
-        _.targets = targets.clone();
+        _._targets = targets.clone();
 
         // Apply target substitute here (later)
         if(targets.length == 1){
@@ -975,7 +1029,7 @@ TSBS.init = function(){
 
     wb.tsbs_actionEnd = function(subject, item){
         subject.clearActionSequence()
-        for(var target of _.targets){
+        for(var target of _._targets){
             target.startIdleMotion();
             //target.returnHome();
             //target.checkCollapse();
@@ -999,9 +1053,9 @@ TSBS.init = function(){
     _.scene_battle_update = Scene_Battle.prototype.update;
     Scene_Battle.prototype.update = function() {
         _.scene_battle_update.call(this);
-        $gameActors.actor(1).updateSequencer();
-        //$gameParty.updateSequencer();
-        //$gameTroop.updateSequencer();
+        //$gameActors.actor(1).updateSequencer();
+        $gameParty.updateSequencer();
+        $gameTroop.updateSequencer();
     };
 
     Game_Unit.prototype.updateSequencer = function(){
@@ -1011,3 +1065,4 @@ TSBS.init = function(){
 
 // Initialize
 TSBS.init()
+TSBS.init = undefined
