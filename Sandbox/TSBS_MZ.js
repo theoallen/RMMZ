@@ -228,7 +228,7 @@ the delay of each frame and all the timing on your own.
 @on Flips
 @off Unflips
 
-@command check collapse
+@command checkCollapse
 @text Check Collapse
 @desc Perform collapse effect to the target if the target is defeated
 
@@ -236,7 +236,7 @@ the delay of each frame and all the timing on your own.
 @text Perform Collapse
 @desc Perform collapse effect on the subject
 
-@command Force Result
+@command forceResult
 @text Force Result
 @desc Force the result of the skill/item
 
@@ -245,14 +245,20 @@ the delay of each frame and all the timing on your own.
 @type select
 @option Default
 @option Hit
-@option Miss
-@option Hit (roll)
 @option Evade
-@option Evade (roll)
 @option Critical
-@option Critical (roll)
 @default Default
-@desc Affect all the next attack regardless of hit/eva rate until you reset to the default.
+@desc Affect all the next action effect regardless of hit/eva/cri rate until you reset to the default.
+
+@arg value
+@text Result
+@type select
+@option Roll
+@option Success
+@option Fail
+@default Roll
+@desc Determine the action result whether it is success or not or roll based on RNG.
+If roll success/fail, it will affect all the next action effect until you reset to the default.
 
 @param div1
 @text ---------------------------
@@ -562,6 +568,39 @@ TSBS.init = function(){
         
     }
 
+    cmd.forceResult = function(args){
+        var result;
+        switch(args.value){
+            case "Roll":
+                result = 2;
+                break;
+            case "Success":
+                result = 1;
+                break;
+            case "Fail":
+                result = -1
+                break;
+        }
+        switch(args.opt){
+            case "Hit":
+                if(result === 2){
+                    let roll = Math.random() <= this.item().successRate *  0.01 * this.subject().hit;
+                    result = (roll ? 1 : -1 )
+                }
+                this._forceResult.hit = result;
+                break
+            case "Evade":
+                this._forceResult.evade = result;
+                break
+            case "Critical":
+                this._forceResult.critical = result;
+                break;
+            default:
+                this.resetForceResult();
+                break;
+        }
+    }
+
     cmd.changeTarget = function(args){
         subj = this
         var determineUnit = (isOpponent) => {
@@ -686,15 +725,16 @@ TSBS.init = function(){
     //#region Game_Action overrides
     // I'm doing this really just because I only need the apply function, and not the rest.
     //---------------------------------------------------------------------------------------------
-    proto = Game_Action.prototype
+    protoAct = Game_Action.prototype
     act = TSBS.Action.prototype
 
-    // Subject is to be determined later
+    // Subject is going to be determined later
     act.setSubject = function(subject){
         if(subject !== null){
-            proto.setSubject.call(this, subject)
+            protoAct.setSubject.call(this, subject)
         }
     }
+    this._action = new TSBS.Action();
 
     // Yeah, I don't want my item being controlled by ID. Why not an actual item rather than id?
     act.item = function() {
@@ -702,7 +742,7 @@ TSBS.init = function(){
         if (subj._itemInUse !== null){
             return subj._itemInUse
         }
-        return proto.item.call(this);
+        return protoAct.item.call(this);
     };
     
     act.isSkill = function() {
@@ -710,7 +750,7 @@ TSBS.init = function(){
         if (subj._itemInUse !== null){
             return subj._itemInUse._dataClass === "skill"
         }
-        return proto.isSkill.call(this);
+        return protoAct.isSkill.call(this);
     };
     
     act.isItem = function() {
@@ -718,10 +758,37 @@ TSBS.init = function(){
         if (subj._itemInUse !== null){
             return subj._itemInUse._dataClass === "item"
         }
-        return proto.isItem.call(this);
+        return protoAct.isItem.call(this);
     };
-    this._action = new TSBS.Action();
 
+    // Force hit, ignore evasion
+    act.itemHit = function(target) {
+        const rsult = this.subject()._forceResult.hit
+        if(rsult !== 0){
+            return rsult;
+        }
+        return protoAct.itemHit.call(this, target)
+    };
+    
+    // Force evasion, does not ignore force hit
+    act.itemEva = function(target) {
+        const rsult = this.subject()._forceResult.evade
+        if(this.subject()._forceResult.hit !== 0){
+            return 0;
+        }else if (this.subject()._forceResult.evade !== 0){
+            return rsult;
+        }
+        return protoAct.itemEva.call(this, target)
+    };
+    
+    // Force critical, ignore if critical is checked or not 
+    act.itemCri = function(target) {
+        const rsult = this.subject()._forceResult.critical
+        if(rsult !== 0){
+            return rsult;
+        }
+        return protoAct.itemCri.call(this, target)
+    };
     //#endregion
     //=============================================================================================
 
@@ -764,11 +831,14 @@ TSBS.init = function(){
         this._targetArray = []          // Store the current target
         this._flip = false              // Determine if the battler image is flipped
         this._newTargetValid = false    // Determine if getting a new target is success
-        this._forceResult = {           // Store the force result
-            "hit": false,
-            "miss": false,
-            "evade": false,
-            "critical": false
+        this.resetForceResult()
+    }
+
+    bb.resetForceResult = function() {
+        this._forceResult = {           
+            hit: 0,
+            evade: 0,
+            critical: 0
         }
     }
 
@@ -788,9 +858,9 @@ TSBS.init = function(){
 
     bb.sprite = function(){
         if (this.isActor()){
-            return _._actorSprites[this._actorId];
+            return TSBS._actorSprites[this._actorId];
         }else{
-            return _._enemySprites[this.index()];
+            return TSBS._enemySprites[this.index()];
         }
     }
 
@@ -979,7 +1049,7 @@ TSBS.init = function(){
         return _.sprset.isBusy.call(this) || _.isSequenceBusy();
     };
 
-    // Delays are silly, why would they do this tbh ...
+    // Delays are silly, why would they do this smh ...
     sset.animationBaseDelay = function() {
         return 0;
     };
