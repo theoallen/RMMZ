@@ -46,7 +46,7 @@ Theo.ShakeBattler = function(){
     let params = PluginManager.parameters(_.pluginName)
     _.power = Number(params.pwr)
     _.duration = Number(params.dur)
-    _.diminish = params.dur === "true"
+    _.diminish = params.dim === "true"
 
     _.spritebattler_updatePos = Sprite_Battler.prototype.updatePosition;
     Sprite_Battler.prototype.updatePosition = function(){
