@@ -7,8 +7,8 @@ Terms of Use
 * You are free to post a paid extension to my plugin as long as you don't repost the whole original/edited code (refers to 3rd point)
 * I'm not responsible to any problem with the third party that sold the paid extension or the commission work.
 * I'm not responsible to any old version of the plugin lying around in the internet due to being reposted.
-* If you use my plugin for commercial purpose (game/paid extension), I have the right to ask a free copy of it **IF** I'm interested in your stuff.
-* If the terms is differ from this in what I've written in plugin description, refers to the plugin description.
+* If you use my plugin for commercial purpose (game/paid extension), I have the right to ask a free access to your stuff **IF** I'm interested.
+* I have the right to change the terms as I see fit.
 
 News
 =====
