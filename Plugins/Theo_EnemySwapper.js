@@ -36,7 +36,6 @@ Theo.EnemySwapper = function(){
                             swaps.split(",").forEach(targetSwap => {
                                 if(Number.isNaN(Number(targetSwap))){
                                     let name = String(targetSwap).trim()
-                                    console.log(name)
                                     enemy = $dataEnemies.find(e => {
                                         if (e){
                                             return e.name === name
