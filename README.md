@@ -1,9 +1,9 @@
 Terms of Use
 =====
 * Credit goes by my name, TheoAllen.
-* All my plugins are free to use for commercial and non-commercial project. This includes a game jam with any kind of prizes.
-* All my plugins are free to repost/edit/repost of edit as long as it is remain free and you don't claim it if it is yours.
-* All my plugins are allowed to be used in a private commission work.
+* All of my plugins are free to use for commercial and non-commercial project. This includes a game jam with any kind of prizes.
+* All of my plugins are free to repost/edit/repost of edit as long as it is remain free and you don't claim it if it is yours.
+* All of my plugins are allowed to be used in a private commission work.
 * You are free to post a paid extension to my plugin as long as you don't repost the whole original/edited code (refers to 3rd point)
 * I'm not responsible to any problem with the third party that sold the paid extension or the commission work.
 * I'm not responsible to any old version of the plugin lying around in the internet due to being reposted.
