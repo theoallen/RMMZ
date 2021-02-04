@@ -396,7 +396,7 @@ Theo.EnemyHPGauge = function(){
         }
 
         updatePosition(){
-            if($._position === "Bottom"){
+            if(this.gaugeOpt().pos === "Bottom"){
                 this.x = this._refSprite.x + this.gaugeOpt().offsetX
                 this.y = this._refSprite.y + this.gaugeOpt().offsetY
             }else{
