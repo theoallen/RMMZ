@@ -9,6 +9,9 @@ This plugin adds a HP gauge bar to the enemy.
 This plugin is strictly designed for RPG Maker MZ and will likely not work 
 if used for RPG Maker MV
 
+♦ Terms of Use:
+- https://github.com/theoallen/RMMZ/blob/master/README.md
+
 ♦ Configuration:
 Configure the HP gauge to your liking in the plugin parameters.
 If you want to override the configuration for certain enemies. you could
@@ -43,9 +46,6 @@ use notetag in the enemy notebox as follow.
   <gauge segments: n>
   Override the segments value in the plugin parameter
   When the value is above 1, the gauge bar will be divided based on the number
-
-♦ Terms of Use:
-- https://github.com/theoallen/RMMZ/blob/master/README.md
 
  @param option
  @text General Option
@@ -108,7 +108,7 @@ use notetag in the enemy notebox as follow.
  @min 0
  @max 9999
  @default 25
- @desc Display duration before the gauge vanishes after animation
+ @desc Display duration before the gauge vanishes after animation. Also used for afterimage effect.
 
  @param border
  @parent prop
@@ -155,6 +155,23 @@ use notetag in the enemy notebox as follow.
  @min 0
  @desc Color index for background. Same as text color
  
+ @param aftImage
+ @parent gaugecolor
+ @text Afterimage Color
+ @type number
+ @default 18
+ @min 0
+ @desc Color index for the afterimage effect. Same as text color
+ 
+ @param aftAlpha
+ @parent gaugecolor
+ @text Afterimage Alpha
+ @type number
+ @default 200
+ @min 0
+ @max 255
+ @desc Alpha Value for the afterimage. 255 = full shown. 0 = full transparency
+
  */
 var Theo = Theo || {}
 Theo.EnemyHPGauge = function(){
@@ -168,7 +185,9 @@ Theo.EnemyHPGauge = function(){
     $._tagColor2 = /<gauge\s+color2\s*:\s*(\d+)>/i
     $._tagOffsetX = /<gauge\s+offset\s+x\s*:\s*(-|\+*)(\d+)>/i
     $._tagOffsetY = /<gauge\s+offset\s+y\s*:\s*(-|\+*)(\d+)>/i
-    $._tagSegment = /<gauge\s+segments\s*:\s*(\d+)>/
+    $._tagSegment = /<gauge\s+segments\s*:\s*(\d+)>/i
+    $._tagAftimg = /<gauge\s+afterimage\s*:\s*(\d+)>/i
+    $._tagAftAlpha = /<gauge\s+afterimage\s+alpha\s*:\s*(\d+)>/i
     $._params = PluginManager._parameters[pluginName.toLowerCase()]
 
     if($._params === undefined){
@@ -178,13 +197,17 @@ Theo.EnemyHPGauge = function(){
         return
     }
 
+    const hexConverter = (value) => {
+        return ('00' + value.toString(16)).slice(-2);
+    }
+
     $.dbLoaded = DataManager.isDatabaseLoaded;
     DataManager.isDatabaseLoaded = function(){
         if (!$.dbLoaded.call(this)) {return false};
         if (!$._isLoaded) {
             for(const enemy of $dataEnemies){
                 if(enemy){
-                    $.loadDB.call(enemy)
+                    $.loadDB(enemy)
                 }
             }
             $._isLoaded = true;
@@ -192,10 +215,10 @@ Theo.EnemyHPGauge = function(){
         return true;
     }
 
-    $.loadDB = function(){
+    $.loadDB = function(enemy){
         const gauge = new $.GaugeDB()
-        gauge.loadOptions(this.note)
-        this._visualGauge = gauge
+        gauge.loadOptions(enemy.note)
+        enemy._visualGauge = gauge
     }
 
     $.GaugeDB = class {
@@ -214,30 +237,40 @@ Theo.EnemyHPGauge = function(){
             this.animeDuration = Number($._params.animeDur)
             this.displayDuration = Number($._params.displayDur)
             this.segments = Number($._params.segments)
+            this.afterimageColor = Number($._params.aftImage)
+            this.afterimageAlpha = Number($._params.aftAlpha)
         }
 
         loadOptions(notes){
             const lines = notes.split(/[\r\n]+/)
             for(const line of lines){
-                if(line.match($._tagHide)){
-                    this.displayType = "hide"
-                }else if(line.match($._tagShow)){
-                    this.displayType = "show"
-                }else if(line.match($._tagWidth)){
-                    this.width = Number(RegExp.$1)
-                }else if(line.match($._tagHeight)){
-                    this.height = Number(RegExp.$1)
-                }else if(line.match($._tagColor1)){
-                    this.color1 = Number(RegExp.$1)
-                }else if(line.match($._tagColor2)){
-                    this.color2 = Number(RegExp.$1)
-                }else if(line.match($._tagOffsetX)){
-                    this.offsetX = Number(RegExp.$2) * (RegExp.$1 === "-" ? -1 : 1)
-                }else if(line.match($._tagOffsetY)){
-                    this.offsetY = Number(RegExp.$2) * (RegExp.$1 === "-" ? -1 : 1)
-                }else if(line.match($._tagSegment)){
-                    this.segments = Number(RegExp.$1)
-                }
+                this.evaluateOption(line)
+            }
+        }
+
+        evaluateOption(line){
+            if(line.match($._tagHide)){
+                this.displayType = "hide"
+            }else if(line.match($._tagShow)){
+                this.displayType = "show"
+            }else if(line.match($._tagWidth)){
+                this.width = Number(RegExp.$1)
+            }else if(line.match($._tagHeight)){
+                this.height = Number(RegExp.$1)
+            }else if(line.match($._tagColor1)){
+                this.color1 = Number(RegExp.$1)
+            }else if(line.match($._tagColor2)){
+                this.color2 = Number(RegExp.$1)
+            }else if(line.match($._tagOffsetX)){
+                this.offsetX = Number(RegExp.$2) * (RegExp.$1 === "-" ? -1 : 1)
+            }else if(line.match($._tagOffsetY)){
+                this.offsetY = Number(RegExp.$2) * (RegExp.$1 === "-" ? -1 : 1)
+            }else if(line.match($._tagSegment)){
+                this.segments = Number(RegExp.$1)
+            }else if(line.match($._tagAftimg)){
+                this.afterimageColor = Number(RegExp.$1)
+            }else if(line.match($._tagAftAlpha)){
+                this.afterimageAlpha = Number(RegExp.$1)
             }
         }
 
@@ -266,6 +299,13 @@ Theo.EnemyHPGauge = function(){
             return bmp
         }
 
+        createAfterimageBitmap(){
+            const bmp = new Bitmap(this.width - this.thickness*2, this.height - this.thickness*2)
+            const color = ColorManager.textColor(this.afterimageColor) + hexConverter(this.afterimageAlpha)
+            bmp.fillRect(0, 0, bmp.width, bmp.height, color)
+            return bmp
+        }
+
     }
 
     $.GaugeBar = class extends Sprite {
@@ -274,6 +314,7 @@ Theo.EnemyHPGauge = function(){
             this._refSprite = refSprite
             this._gaugeOpt = this.battler().enemy()._visualGauge
             this.createBackSprite()
+            this.createAfterimageSprite()
             this.createGaugeSprite()
             this.createSegmentSprite()
             this._animDuration = 0;
@@ -284,6 +325,17 @@ Theo.EnemyHPGauge = function(){
 
         gaugeOpt(){
             return this._gaugeOpt
+        }
+
+        createAfterimageSprite(){
+            const bmp = this.gaugeOpt().createAfterimageBitmap()
+            const gauge = new Sprite(bmp)
+            gauge.x = -gauge.bitmap.width/2
+            if(this.gaugeOpt().pos === "Top"){
+                gauge.anchor.y = 1
+            }
+            this._aftgauge = gauge
+            this.addChild(gauge)
         }
 
         createGaugeSprite(){
@@ -344,8 +396,12 @@ Theo.EnemyHPGauge = function(){
                     const change = this.easing(1 - time/this.animateDuration()) * (target - old)
                     this._gauge.width = old + change
                 } else {
-                    const w = this._gauge._bitmap.width * this._rate;
-                    this._gauge.width = w
+                    this._gauge.width = this._gauge._bitmap.width * this._rate;
+                    const afttime = this._animDuration
+                    const old = this._gauge._bitmap.width * this._oldRate;
+                    const target = this._gauge._bitmap.width * this._rate;
+                    const change = this.easing(1 - afttime/this.displayDuration()) * (target - old)
+                    this._aftgauge.width = old + change
                 }
                 this._animDuration -= 1;
             }
