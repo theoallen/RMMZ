@@ -381,7 +381,7 @@ Theo.EnemyHPGauge = function(){
         updateVisibilityCase(){
             const lastHidden = this._hidden
             if(this._refSprite._refreshGauge){
-                const lastHpRate = this.isAnimating() ? this.currentGaugeRate() : this._rate;
+                const lastHpRate = this._rate;
                 const newRate = this.battler().hpRate()
                 if(lastHpRate !== newRate){
                     this.animate(lastHpRate, newRate);
