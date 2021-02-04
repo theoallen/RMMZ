@@ -12,7 +12,7 @@ Terms of Use
 
 News
 =====
-Currently, this repository is for my code dump at the moment. I can not guarantee the stability any of the plugins. If you decide to use one, use it at your own risk.
+I'm back at plugin making for MZ and will be strictly for MZ. All of the plugins inside the plugin folder is in ready to use. Although some of the plugin may need some optimization due to my lack understanding of JS and MZ during the making. You may report the problem if there is any.
 
 Plugins on the Sandbox folder are not ready to use (I use it mostly for backup). But you're free to look at it.
 
