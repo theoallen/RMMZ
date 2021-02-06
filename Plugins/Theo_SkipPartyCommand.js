@@ -5,11 +5,11 @@
 @url https://github.com/theoallen/RMMZ/tree/master/Plugins
 @help 
 ♦ About:
-This plugin skips party command window. The one that has fight/escape
-options. You can still access the command by using cancel button.
+This plugin skips the party command window. The one that has fight/escape
+options. You can still access the command by using the cancel button.
 
-Currently only works for default turn-based, not time-progress battle.
-May add TPB support later in the future when I know how.
+Currently only works for default turn-based, not the time-progress battle.
+May add TPB support later in the future when I know how to do it.
 
 ♦ Terms of Use:
 https://github.com/theoallen/RMMZ/blob/master/README.md
