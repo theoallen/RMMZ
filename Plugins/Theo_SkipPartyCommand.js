@@ -31,3 +31,4 @@ Theo.SkipPartyCommand = () => {
         }
     }
 }
+Theo.SkipPartyCommand()
