@@ -147,7 +147,6 @@ Theo.TypingSound = function(){
             return
         }
         const variance = ((Math.random() >= 0.5 ? 1 : -1) * (Math.random() * $gameSystem._typingSe.variance))
-        console.log(variance)
         const se = {
             name: $gameSystem._typingSe.name,
             volume: $gameSystem._typingSe.volume,
