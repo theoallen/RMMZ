@@ -1,6 +1,6 @@
 /*:
 @target MZ
-@plugindesc v1.0.0 - Typing Sound Effect
+@plugindesc v1.0.0 - Typing Sound Effect MZ
 @author TheoAllen
 @url https://github.com/theoallen/RMMZ/tree/master/Plugins
 @help 
