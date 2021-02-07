@@ -25,6 +25,9 @@ taunt/hide with no way of removing it.
 Q: What if the battler has both <taunt> and <hide>?
 A: The hide tag takes priority
 
+Q: What if there is more than one battler that is taunting.
+A: The random target will be rolled based on their TGR.
+
 Q: What if all the battlers are hidden?
 A: If there is no target (due to being hidden), all of them will be 
    automatically exposed and will be targetable
