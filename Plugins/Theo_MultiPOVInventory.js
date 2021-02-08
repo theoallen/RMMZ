@@ -1,6 +1,6 @@
 /*:
 @target MZ
-@plugindesc v1.0.0 - Multiple Party POV Inventory System
+@plugindesc v1.0.1 - Multiple Party POV Inventory System
 @author TheoAllen
 @url https://github.com/theoallen/RMMZ/tree/master/Plugins
 @help
@@ -63,7 +63,7 @@ plugins. But I don't know.
 var Theo = Theo || {}
 Theo.MultiPOVInv = function(){
     const $ = Theo.MultiPOVInv
-    $._version = '1.0.0'
+    $._version = '1.0.1'
     $._pluginName = document.currentScript.src.match(/.+\/(.+)\.js/)[1]
 
     PluginManager.registerCommand($._pluginName, "save", args => {
@@ -126,13 +126,14 @@ Theo.MultiPOVInv = function(){
         }
     }
 
-    Game_Party.prototype._multiInventories = {} 
     $.getInventory = function(name){
+        if(this._multiInventories === undefined){
+            this._multiInventories = {}
+        }
         if(!this._multiInventories[name]){
             this._multiInventories[name] = new $.Inventory()
         }
         return this._multiInventories[name]
     }
-
 }
 Theo.MultiPOVInv()
