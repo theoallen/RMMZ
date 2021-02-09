@@ -78,4 +78,4 @@ Theo.SkillAndItemReordering = function(){
         this._data = this._data.sort($.sorting)
     };
 }
-Theo.ObjectReordering()
+Theo.SkillAndItemReordering()
