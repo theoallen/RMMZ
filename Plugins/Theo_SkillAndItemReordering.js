@@ -14,7 +14,7 @@ Tag your item/skill/weapons/armors with
 
 The default weight of the order is 50 (customizable in the parameter).
 If you want to put a certain item above others, the order must be smaller
-than 50 (Beecause it is easier to think that bigger thing sink deeper). 
+than 50 (Because it is easier to think that bigger thing sinks deeper). 
 
 When two item has the same order weight, it will use the id to
 determine the sort priority.
