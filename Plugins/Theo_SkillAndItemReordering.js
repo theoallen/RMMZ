@@ -33,7 +33,10 @@ determine the sort priority.
 var Theo = Theo || {}
 Theo.SkillAndItemReordering = function(){
     const $ = Theo.SkillAndItemReordering
+    $._pluginName = document.currentScript.src.match(/.+\/(.+)\.js/)[1]
     $._version = '1.0.0'
+
+    $._defaultWeight = Number(PluginManager.parameters($._pluginName).weight)
 
     $.dbLoaded = DataManager.isDatabaseLoaded;
     DataManager.isDatabaseLoaded = function(){
@@ -66,7 +69,7 @@ Theo.SkillAndItemReordering = function(){
 
     $.loadDefaultMeta = (db) => {
         if(db.meta.order === undefined){
-            db.meta.order = 50
+            db.meta.order = $._defaultWeight
         }else{
             db.meta.order = Number(db.meta.order)
         }
