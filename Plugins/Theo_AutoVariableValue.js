@@ -6,7 +6,14 @@
 @help
 ♦ About:
 You want the value of variable value is dynamically changed and you
-hate using parallel common event for varions reasons
+hate using parallel common event for varions reasons.
+
+♦ How to use
+Encapsulate your code in {}
+Put them as a variable name.
+
+Example:
+{ $gamePlayer.x }
 
 ♦ Pros
 - It runs on battle screen too.
