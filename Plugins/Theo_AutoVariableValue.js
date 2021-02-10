@@ -70,7 +70,7 @@ Theo.AutoVariableValue = function(){
     };
 
     $.initDynamicData = function(){
-        this._dynamicData = []
+        this._dynamicData = {}
         let i = 0
         for(const name of $dataSystem.variables){
             if($._tagRetrieval.test(name)){
@@ -97,7 +97,8 @@ Theo.AutoVariableValue = function(){
     }
 
     $.update = () => {
-        for(const data of $gameVariables._dynamicData){
+        for(const key of Object.keys($gameVariables._dynamicData)){
+            const data = $gameVariables._dynamicData[key]
             if(data){
                 data.update()
             }
