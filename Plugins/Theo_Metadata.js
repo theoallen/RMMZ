@@ -1,6 +1,6 @@
 /*:
 @target MZ
-@plugindesc v1.0.0 - Metadata
+@plugindesc v1.0.0 - Actor and Enemy Metadata
 @author TheoAllen
 @url https://github.com/theoallen/RMMZ/tree/master/Plugins
 @help
