@@ -6,13 +6,13 @@
 @help
 ♦ About:
 You want to tag an enemy as a flying enemy and also want to increase 
-the damage dealt to the enemy if you're using a ranged weapon but
-you don't want to do the following:
+the damage to the enemy if you're using a ranged weapon but you don't 
+want to do the following:
 
 > Use element rate only for that reason.
 > Use a complicated state workaround by applying a state to a certain
   enemy and check if the state exists then boost the damage. Plus it
-  is also waste of the state slot.
+  is also a waste of the state slot.
 
 ---------------------------------
 ♦ How to use:
