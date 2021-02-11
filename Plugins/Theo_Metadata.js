@@ -11,7 +11,8 @@ you don't want to do the following:
 
 > Use element rate only for that reason.
 > Use a complicated state workaround by applying a state to a certain
-  enemy and check if the state exists then boost the damage.
+  enemy and check if the state exists then boost the damage. Plus it
+  is also waste of the state slot.
 
 ---------------------------------
 ♦ How to use:
