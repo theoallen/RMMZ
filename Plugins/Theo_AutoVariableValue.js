@@ -6,7 +6,7 @@
 @help
 ♦ About:
 You want the value of variable value is dynamically changed and you
-hate using parallel common event for varions reasons.
+hate using the parallel common event for various reasons.
 
 ♦ How to use
 Encapsulate your code in {}
