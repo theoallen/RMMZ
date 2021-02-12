@@ -20,10 +20,8 @@ Default keys
 - Press (G) to trigger speed up on/off.
 
 ♦ Disclaimer:
-This works by "overclocking" the update speed of your game which it may
-also depends on your PC speed if it can handle the speed. Most of the time
-it should run just fine, just please put a reasonable number and don't
-put frame speed as insane as 1000.
+This is experimental. It may or may not break your game eventing.
+If you find any problem, you can help me by reporting it.
 
 ♦ Terms of Use:
 - https://github.com/theoallen/RMMZ/blob/master/README.md
