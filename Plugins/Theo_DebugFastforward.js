@@ -6,7 +6,7 @@
 @help
 ♦ About:
 You're getting tired of watching the same cut-scene 1000 times and you
-want to skip or speed up the game and test the thing you want to test.
+want to skip or accelerates the game and test the thing you want to test.
 
 ♦ How to use:
 Press or toggle the button to speed up the game.
@@ -16,8 +16,8 @@ ASCII for the button code
 https://theasciicode.com.ar/
 
 Default keys
-- Hold press (F) to speed up.
-- Press (G) to trigger speed up on/off.
+- Hold press (F) to accelerate
+- Press (G) to trigger acceleration on/off.
 
 ♦ Disclaimer:
 This is experimental. It may or may not break your game eventing.
@@ -27,7 +27,7 @@ If you find any problem, you can help me by reporting it.
 - https://github.com/theoallen/RMMZ/blob/master/README.md
 
 @param speedsetting
-@text ----- [Speed Setting] -----
+@text ----- [Acceleration Setting] -----
 
 @param frametoskip
 @parent speedsetting
@@ -35,7 +35,7 @@ If you find any problem, you can help me by reporting it.
 @type number
 @min 1
 @default 7
-@desc How many additional frames will be skipped when you press the button?
+@desc How many additional frames will be 'skipped' when you press the button?
 
 @param textspeed
 @parent speedsetting
@@ -70,57 +70,57 @@ If you find any problem, you can help me by reporting it.
 @text Skips Sound effect?
 @type boolean
 @default true
-@desc When in speed up mode, do not play Sound Effect.
+@desc Do not play Sound Effect.
 
 @param autoskiptext
 @parent skipsetting
 @text Skips Text Input?
 @type boolean
 @default true
-@desc When in speed up mode, do not wait for input for show text.
+@desc Do not wait for input for show text.
 
 @param skiptextwait
 @parent skipsetting
 @text Skips Text Wait?
 @type boolean
 @default true
-@desc When in speed up mode, ignore wait imposed by the escape characters.
+@desc Ignore wait imposed by the escape characters.
 
 @param skipmovie
 @parent skipsetting
 @text Skips Play movie?
 @type boolean
 @default true
-@desc When in speed up mode, do not play movie
+@desc Do not play movie
 
 @param skipcommandwait
 @parent skipsetting
 @text Skips Event Wait?
 @type boolean
 @default false
-@desc When in speed up mode, do not execute event command wait. MAY THROW OFF YOUR EVENT TIMING.
+@desc Do not execute event command wait. MAY THROW OFF YOUR EVENT TIMING.
 
 @param skipanimation
 @parent skipsetting
 @text Skips Animation?
 @type boolean
 @default true
-@desc When in speed up mode, do not play animation from the event command.
+@desc Do not play animation from the event command.
 
 @param skipfade
 @parent skipsetting
 @text Skips Fadein/out?
 @type boolean
 @default true
-@desc When in speed up mode, speed up fadein/fadeout from event commands.
+@desc Dpeed up fadein/fadeout from event commands.
 
 @command triggeron
 @text Speed up ON
-@desc Speed up the game. Don't forget to turn it off. Will only work in playtest mode
+@desc Accelerates the game. Don't forget to turn it off. Will only work in playtest mode
 
 @command triggeroff
 @text Speed up OFF
-@desc Turn off the Speed up.
+@desc Turn off the acceleration.
 
 */
 
