@@ -62,7 +62,7 @@ var Theo = Theo || {}
 Theo.DebugBattle = function(){
     const $ = Theo.DebugBattle
     $._pluginName = document.currentScript.src.match(/.+\/(.+)\.js/)[1]
-    $._version = '1.0.0'
+    $._version = '1.0.1'
     $._params = PluginManager.parameters($._pluginName)
 
     $._buttonNames = {
@@ -131,6 +131,7 @@ Theo.DebugBattle = function(){
     $.debugRecover = () => {
         for(const actor of $gameParty.members()){
             actor._hp = actor.mhp
+            actor.refresh()
         }
         SoundManager.playRecovery()
     }
@@ -140,6 +141,7 @@ Theo.DebugBattle = function(){
             actor._hp = 1
             actor._tp = 0
             actor._mp = 0
+            actor.refresh()
         }
         SoundManager.playActorDamage()
     }
@@ -148,6 +150,7 @@ Theo.DebugBattle = function(){
         for(const actor of $gameParty.members()){
             actor._mp = actor.mmp
             actor._tp = actor.maxTp()
+            actor.refresh()
         }
         SoundManager.playRecovery()
     }
