@@ -1,3 +1,7 @@
+/*
+Change log
+- 16/02/2012 = v1.0.1 - Added missing refresh call to the actor
+*/
 /*:
 @target MZ
 @plugindesc v1.0.0 - Various functions for battle test
