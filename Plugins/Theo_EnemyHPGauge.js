@@ -1,6 +1,11 @@
+/*
+Change log
+version 1.0.1   = Bring the gauge to front (not affected by the screen tone)
+                = Auto detect plugin name
+*/
 /*:
 @target MZ
-@plugindesc v1.0.0 - Theo Enemy HP Gauge | Visual HP gauge for the enemies
+@plugindesc v1.0.1 - Theo Enemy HP Gauge | Visual HP gauge for the enemies
 @author TheoAllen
 @url https://github.com/theoallen/RMMZ/tree/master/Plugins
 @help 
@@ -175,8 +180,10 @@ use notetag in the enemy notebox as follow.
  */
 var Theo = Theo || {}
 Theo.EnemyHPGauge = function(){
-    const pluginName = "Theo_EnemyHPGauge"
     const $ = Theo.EnemyHPGauge
+    $._version = '1.0.1'
+    $._pluginName = document.currentScript.src.match(/.+\/(.+)\.js/)[1]
+
     $._tagHide = /<hide\s+gauge>/i
     $._tagShow = /<show\s+gauge>/i
     $._tagWidth = /<gauge\s+width\s*:\s*(\d+)>/i
@@ -188,14 +195,7 @@ Theo.EnemyHPGauge = function(){
     $._tagSegment = /<gauge\s+segments\s*:\s*(\d+)>/i
     $._tagAftimg = /<gauge\s+afterimage\s*:\s*(\d+)>/i
     $._tagAftAlpha = /<gauge\s+afterimage\s+alpha\s*:\s*(\d+)>/i
-    $._params = PluginManager._parameters[pluginName.toLowerCase()]
-
-    if($._params === undefined){
-        const message = "Enemy HP Gauge was failed to load. Did you save the plugin name correctly? It should be named as \"" + pluginName + ".js\""
-        const err = new Error(message)
-        Graphics.printError("Plugin Load Error", message, err);
-        return
-    }
+    $._params = PluginManager.parameters($._pluginName)
 
     const hexConverter = (value) => {
         return ('00' + value.toString(16)).slice(-2);
@@ -502,7 +502,7 @@ Theo.EnemyHPGauge = function(){
         for(const enemy of this._enemySprites){
             const hpBar = new $.GaugeBar(enemy)
             this._gauges.push(hpBar)
-            this._battleField.addChild(hpBar)
+            this.addChild(hpBar)
         }
     }
 
