@@ -7,6 +7,11 @@
 ♦ About:
 Restrict the event movement to a specific region or terrain tag.
 
+♦ How to use:
+Use plugin command to configure the passability of the event.
+This plugin command will not be executed as an event command. But as a
+page configuration when the event is loaded
+
 ♦ Terms of Use:
 - https://github.com/theoallen/RMMZ/blob/master/README.md
 
