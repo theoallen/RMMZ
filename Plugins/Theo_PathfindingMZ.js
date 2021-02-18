@@ -14,6 +14,10 @@ Use it in the move route --> script call
 
 Replace (x, y) with your target destination
 
+Extra script command
+> this.gotoPlayer() - Move to the player position
+> this.gotoEvent(id) - Move to the specific event position
+
 ♦ Terms of Use:
 - https://github.com/theoallen/RMMZ/blob/master/README.md
 */
@@ -213,7 +217,7 @@ Theo.Pathfinding = function(){
     }
 
     Game_Character.prototype.gotoEvent = function(id){
-        const event = $gameMap.events()[id]
+        const event = $gameMap.event(id)
         this.gotoChar(event)
     }
 
