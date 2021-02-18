@@ -10,7 +10,7 @@ Because you're too lazy to put move route command one by one.
 
 ♦ How to use:
 Use it in the move route --> script call
-> this.findPath(x, y)
+> this.generatePath(x, y)
 
 Replace (x, y) with your target destination
 
@@ -136,7 +136,7 @@ Theo.Pathfinding = function(){
         }
     }
 
-    Game_Character.prototype.findPathx = function(tx, ty){
+    Game_Character.prototype.generatePath = function(tx, ty){
         if(this.x === tx && this.y === ty){
             return;
         }
