@@ -200,7 +200,6 @@ Theo.Pathfinding = function(){
 
     $.generateRoute = function(node){
         const list = []
-        console.log(node)
         while(node._parent){
             const cmd = {code: node.getParentDir()/2}
             list.unshift(cmd);
@@ -211,7 +210,7 @@ Theo.Pathfinding = function(){
 
     Game_Character.prototype.gotoChar = function(char){
         if(char){
-            this.findPath(char.x, char.y)
+            this.generatePath(char.x, char.y)
         }
     }
 
