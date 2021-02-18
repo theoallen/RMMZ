@@ -25,7 +25,7 @@ var Theo = Theo || {}
 
 Theo.Pathfinding = function(){
     const $ = Theo.Pathfinding
-    $._version = '1.0.0'
+    $._version = '1.0.1'
 
     // Array shuffle
     if(!Array.prototype.shuffle){
@@ -112,6 +112,7 @@ Theo.Pathfinding = function(){
                 nextNode._parent = this
                 this._nodes.insert(dir, nextNode)
             }
+            this._expanded = true
         }
 
         getParentDir(){
@@ -135,7 +136,7 @@ Theo.Pathfinding = function(){
         }
     }
 
-    Game_Character.prototype.findPath = function(tx, ty){
+    Game_Character.prototype.findPathx = function(tx, ty){
         if(this.x === tx && this.y === ty){
             return;
         }
@@ -164,6 +165,7 @@ Theo.Pathfinding = function(){
                     continue
                 }
                 if(nextNode.x === tx && nextNode.y === ty){
+                    firstNode._parent = null
                     queue.clear()
                     moveCode = $.generateRoute(nextNode)
                     break
@@ -198,6 +200,7 @@ Theo.Pathfinding = function(){
 
     $.generateRoute = function(node){
         const list = []
+        console.log(node)
         while(node._parent){
             const cmd = {code: node.getParentDir()/2}
             list.unshift(cmd);
