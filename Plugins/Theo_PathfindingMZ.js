@@ -1,6 +1,6 @@
 /*:
 @target MZ
-@plugindesc v1.0.0 - Pathfinding, move route generator.
+@plugindesc v1.0.1 - Pathfinding, move route generator.
 @author TheoAllen
 @url https://github.com/theoallen/RMMZ/tree/master/Plugins
 @help
