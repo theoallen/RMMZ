@@ -6,7 +6,7 @@
 @help
 ♦ About:
 You deal 100 damage, but you don't want to drain 100 HP.
-Maybe you only want it only drains 25, or may twice of it.
+Maybe you only want it only drains 25, or maybe twice of it.
 
 ♦ How to use:
 Put tag <drain rate: n>
