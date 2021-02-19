@@ -1,6 +1,9 @@
+// Change log
+// v1.0.1 - Fix, troop event on turn 0 not starting
+
 /*:
 @target MZ
-@plugindesc v1.0.0 - You hate emerged message on battle start and intro animation.
+@plugindesc v1.0.1 - You hate emerged message on battle start and intro animation.
 @author TheoAllen
 @url https://github.com/theoallen/RMMZ/tree/master/Plugins
 @help
@@ -20,13 +23,11 @@ https://github.com/theoallen/RMMZ/blob/master/Plugins/Theo_SkipPartyCommand.js
 
 ♦ Terms of Use:
 - https://github.com/theoallen/RMMZ/blob/master/README.md
-
 */
-
 var Theo = Theo || {}
 Theo.InstantBattleStart = () => {
     const $ = Theo.InstantBattleStart
-    $._version = '1.0.0'
+    $._version = '1.0.1'
     // Delete battle emerged message
     BattleManager.displayStartMessages = () => {
     };
@@ -35,7 +36,9 @@ Theo.InstantBattleStart = () => {
     $.startBattle = BattleManager.startBattle
     BattleManager.startBattle = function() {
         $.startBattle.call(this)
-        this.updateStart()
+        if(!this.updateEventMain()){
+            this.updateStart()
+        }
     };
     
     // Skips sprite movement
