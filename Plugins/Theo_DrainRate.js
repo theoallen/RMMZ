@@ -1,6 +1,6 @@
 /*:
 @target MZ
-@plugindesc v1.0.0 - Customize the drain amount
+@plugindesc v1.0.1 - Customize the drain amount
 @author TheoAllen
 @url https://github.com/theoallen/RMMZ/tree/master/Plugins
 @help
@@ -30,20 +30,20 @@ Or seek for a plugin that disables it all together.
 var Theo = Theo || {}
 Theo.DrainRate = function(){
     const $ = Theo.DrainRate
-    $._version = '1.0.0'
+    $._version = '1.0.1'
 
     $.actionDrainHP = Game_Action.prototype.gainDrainedHp
     Game_Action.prototype.gainDrainedHp = function(value) {
         const meta = this.item().meta["drain rate"]
         const realValue = meta ? (Number(meta)/100) * value : value
-        $.actionDrainHP.call(this, realValue)
+        $.actionDrainHP.call(this, Math.floor(realValue))
     };
     
     $.actionDrainMP = Game_Action.prototype.gainDrainedMp
     Game_Action.prototype.gainDrainedMp = function(value) {
         const meta = this.item().meta["drain rate"]
         const realValue = meta ? (Number(meta)/100) * value : value
-        $.actionDrainMP.call(this, realValue)
+        $.actionDrainMP.call(this, Math.floor(realValue))
     };
 }
 Theo.DrainRate()
