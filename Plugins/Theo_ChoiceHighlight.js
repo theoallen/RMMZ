@@ -7,7 +7,7 @@
 
 ♦ But why?
 You're about to warn your player that your choice may affect the game. A 
-choice that has a consequence such as to let an NPC diesor live. Also 
+choice that has a consequence such as to let an NPC dies or live. Also 
 for some fancy effect.
 
 ♦ How to use:
