@@ -8,6 +8,10 @@ This plugin removes the touch UI. Reposition all of the windows. As well as
 remove the option of it in the option menu. 
 
 IT IS RECOMMENDED TO PUT THIS PLUGIN LOAD ORDER ABOVE ANYTHING ELSE.
+
+Terms of use:
+MIT
+
 */
 var Theo = Theo || {}
 Theo.NoTouchUI = () => {
