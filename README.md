@@ -8,6 +8,7 @@ Terms of Use
 * I'm not responsible to any problem with the third party that sold the paid extension or the commission work.
 * I'm not responsible to any old version of the plugin lying around in the internet due to being reposted.
 * If you use my plugin for commercial purpose (game/paid extension), I have the right to ask a free access to your stuff **IF** I'm interested. *
+* Exception for plugins stored in MIT folder, it uses MIT license.
 * I have the right to change the terms as I see fit.
 
 Note:
