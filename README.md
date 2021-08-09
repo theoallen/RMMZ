@@ -21,6 +21,16 @@ I'm back at plugin making for MZ and will be strictly for MZ. All of the plugins
 
 Plugins on the Sandbox folder are not ready to use (I use it mostly for backup). But you're free to look at it.
 
+I'm also currently making an independent action sequence engine dubbed as Theo's Battle Sequence Engine ([you may look the glimpse here](https://github.com/theoallen/RMMZ/wiki/TBSE-Getting-Started)). While this is still a work in progress, I would like to make a statement about the terms of use of the plugin beforehand.
+
+The terms of use above is still apply for TBSE, there are some to add
+
+* You are free to modify the plugin, make your own version based on mine, and repost it somewhere else. Credit to me must be given.
+* You are free to sell a modified version of the plugin and use your own terms of use as long as you have make a significant change to the plugin (not just a small edit). Credit is still required.
+* You are going to take a full responsibility for modifying and selling the plugin.
+* I have the right to have a full access to your modification, including a separate addon (no payment, no obfuscation).
+* I have the right to include your modification to my plugin if I see fit. Credit will be given.
+
 Version naming
 =====
 The version naming of my plugin will follow this standard
