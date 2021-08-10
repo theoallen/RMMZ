@@ -620,6 +620,30 @@ TBSE.init = function(){
         if (!TBSE.dbLoaded.call(this)) {return false};
         if (!TBSE._isLoaded) {
 
+            let valid = "";
+            if ($dataCommonEvents[TBSE._sequenceList.idle].list.length === 1)
+                valid += "Idle motion is not configured\n";
+            if ($dataCommonEvents[TBSE._sequenceList.damaged].list.length === 1)
+                valid += "Damaged motion is not configured\n";
+            if($dataCommonEvents[TBSE._sequenceList.pinch].list.length === 1)
+                valid += "Crisis motion is not configured\n";
+            if($dataCommonEvents[TBSE._sequenceList.evade].list.length === 1)
+                valid += "Evade motion is not configured\n";
+            if ($dataCommonEvents[TBSE._sequenceList.post].list.length === 1)
+                valid += "Post action is not configured\n";
+            if($dataCommonEvents[TBSE._sequenceList.dead].list.length === 1)
+                valid += "Dead motion is not configured\n";
+            if($dataCommonEvents[TBSE._sequenceList.skill].list.length === 1)
+                valid += "Default skill action is not configured\n";
+            if($dataCommonEvents[TBSE._sequenceList.item].list.length === 1)
+                valid += "Default item action is not configured\n";
+
+            if (valid.length > 0){
+                const err = new Error(valid)
+                err.name = "TBSE - Default Motion Config Error"
+                throw err
+            }
+
             // Loading default motion
             [...$dataActors, ...$dataEnemies].forEach(db => {
                 if(db){
@@ -816,7 +840,7 @@ TBSE.init = function(){
                 break;
         }
         if(isWaiting){
-
+            // Later
         }
     }
 
@@ -827,6 +851,11 @@ TBSE.init = function(){
             seq._action.apply(target);
             if (target.shouldPopupDamage()){
                 target.startDamagePopup();
+                if (target.sequencer().canPlayEvadeMotion()){
+                    target.sequencer().motionEvade()
+                }else if (target.sequencer().canPlayDamagedMotion()){
+                    target.sequencer().motionDamaged()
+                }
             }
         }
         if(this.shouldPopupDamage()){
@@ -842,7 +871,6 @@ TBSE.init = function(){
         } else if(id > 0){
             this.sequencer().setItemUse($dataSkills[id])
         }
-        
     }
 
     // Force the result 
@@ -1068,23 +1096,33 @@ TBSE.init = function(){
             this._actionRecord.clearRecord()
         }
 
+        // Will be changed later
+        canPlayEvadeMotion(){
+            return this.battler()._result.evaded;
+        }
+
         motionEvade(){
             const endFunc = function() { this.startIdleMotion() };
             const actionId = this.dataBattler()._sequenceList.evade
-            this._interpreter.setup(actionId, "action", endFunc)
+            this._interpreter.setup(actionId, "action", endFunc, this)
+        }
+
+        // Will be changed later
+        canPlayDamagedMotion(){
+            return this.battler()._result.hpDamage > 0 || this.battler()._result.mpDamage !== 0;
         }
 
         motionDamaged(){
             const endFunc = function() { this.startIdleMotion() };
-            const actionId = this.dataBattler()._sequenceList.damage
-            this._interpreter.setup(actionId, "action", endFunc)
+            const actionId = this.dataBattler()._sequenceList.damaged
+            this._interpreter.setup(actionId, "action", endFunc, this)
         }
 
         // Currently unimplemented, trying to seek for the best way to implement intro sequence
         motionIntro(){
             const endFunc = function() { this.startIdleMotion() };
             const actionId = this.dataBattler()._sequenceList.intro
-            this._interpreter.setup(actionId, "action", endFunc)
+            this._interpreter.setup(actionId, "action", endFunc, this)
         }
 
         motionVictory(){
@@ -1152,7 +1190,6 @@ TBSE.init = function(){
                 this._endFunc = endFunc.bind(binding);
             }
             this._phaseName = phaseName;
-            this._binding = binding;
         }
 
         battler(){
@@ -1190,13 +1227,13 @@ TBSE.init = function(){
             if (TBSECommand){
                 const commandName = params[1]
                 if (TBSE.COMMANDS[commandName] !== undefined){
-                    let args = params[3];
+                    const args = params[3];
                     args.interpreter = this;
                     TBSE.COMMANDS[commandName].call(this.battler(),(params[3]));
                     return true
                 }
             }
-            let args = params[3];
+            const args = params[3];
             args.battler = this.battler();
             return Game_Interpreter.prototype.command357.call(this, params);
         }
@@ -1372,7 +1409,7 @@ TBSE.init = function(){
         if (seq === undefined){
             return false
         }
-        return seq._interpreter == "action" && !seq._interpreter.ending()
+        return seq._interpreter._phaseName == "action" && !seq._interpreter.ending()
     }
 
     TBSE.battler.clearPopup = bb.clearDamagePopup
@@ -1630,7 +1667,6 @@ TBSE.init = function(){
         this.displayAction(subject, item);
         this.push("tbse_actionMain", subject, targets, item);
         this.push("tbse_actionPost", subject, item);
-        // this.push("tbse_actionEnd", subject, item);
     }
 
     wb.tbse_actionMain = function(subject, targets, item){
@@ -1649,9 +1685,9 @@ TBSE.init = function(){
 
     wb.tbse_actionPost = function(subject, item){
         // Roll attack counter here later
-        this.push("waitFor", 30);
-        this.push("tbse_actionEnd", subject, item);
         //this.setWaitMode("Sequence");
+        //this.push("waitFor", 30);
+        this.push("tbse_actionEnd", subject, item);
     }
 
     // WIP
@@ -1660,16 +1696,15 @@ TBSE.init = function(){
     }
 
     wb.tbse_actionEnd = function(subject, item){
-        //subject.clearActionSequence()
         for(var target of TBSE._affectedBattlers){
-            target.sequencer().startIdleMotion();
+            //target.sequencer().startIdleMotion();
             target.returnHome();
             target.checkCollapse();
         }
         TBSE._affectedBattlers = [];
         BattleManager.endAction();
         this._waitMode = "";
-        this._waitCount = 30;
+        this._waitCount = 5;
     }
 
     wb.waitFor = function(frame) {
