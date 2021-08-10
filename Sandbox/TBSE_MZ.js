@@ -767,9 +767,13 @@ TBSE.init = function(){
         const spr = this.sprite();
         let targX = Number(args.x);
         let targY = Number(args.y);
+        if (this.isEnemy() && TBSE._invertX){
+            targX *= -1
+        }
         switch(args.to){
             case "Target":
-                const targets = this.sequencer()._targetArray.length > 0 ? this._targetArray : TBSE._affectedBattlers
+                const seq = this.sequencer()
+                const targets = seq._targetArray.length > 0 ? seq._targetArray : TBSE._affectedBattlers
                 targX += targets.reduce((total, trg)=>{ return trg.sprite().x + total}, 0)
                 targY += targets.reduce((total, trg)=>{ return trg.sprite().y + total}, 0)
                 break;
@@ -796,7 +800,7 @@ TBSE.init = function(){
     cmd.anim = function(args){
         const isWaiting = args.wait === "true"
         const seq = this.sequencer()
-        let animId = Number(args.anim);
+        let animId = Number(args.id);
         if (animId === 0){
             animId = this.sequencer()._itemInUse.animationId;
             if(animId === -1){
@@ -1639,7 +1643,6 @@ TBSE.init = function(){
         TBSE._affectedBattlers = targets.concat();
         // Probably roll the magic reflect here
         subject.sequencer().actionPrepare(targets, item)
-        console.log(subject._itemInUse)
         subject.sequencer().performActionSequence();
         this.setWaitMode("Sequence");
     }
@@ -1665,6 +1668,8 @@ TBSE.init = function(){
         }
         TBSE._affectedBattlers = [];
         BattleManager.endAction();
+        this._waitMode = "";
+        this._waitCount = 30;
     }
 
     wb.waitFor = function(frame) {
