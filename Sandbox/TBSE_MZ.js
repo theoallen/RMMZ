@@ -1,7 +1,13 @@
+/*
+To do list
+- Projectile
+- Zoom
+- Summon?
+*/
+
 /*:
 @target MZ
 @plugindesc v0.1.0 - Theo's Battle Sequence Engine MZ.
-@author TheoAllen
 @help
 TBSE is spritesheet-based animation sequence plugin aiming for a free-frame 
 pick spritesheet animation sequencer. You are encouraged to use any kind 
@@ -12,11 +18,12 @@ The animation sequencer forces you to define your own animation motion
 instead of being spoiled by an auto-play motion. You also need to customize
 the delay of each frame and all the timing on your own.
 
-To do list
-- Complete the roundtrip
-- Projectile action sequence
-- 
-- Summon?
+@author TheoAllen
+
+//========================================================================
+// * Command - Set Pose
+// - Unit Tested, worked
+//========================================================================
 
 @command pose
 @text Pose
@@ -36,6 +43,39 @@ To do list
 @min 1
 @desc How long (in frames) you want the battler to stay in that pose.
 
+@arg suffix
+@text Suffix
+@type combo
+@option _2
+@option _3
+@option _4
+@option _5
+@desc Change the used spritesheet used by adding suffix. For example, Actor1_1_2 << added "_2"
+
+//========================================================================
+// * Command - Set Pose (Batch)
+// - Draft
+//========================================================================
+
+@command batchpose
+@text Pose (Batch)
+@desc Set the battler pose using batches. To reduce the usage of event slot
+
+@arg list
+@text Pose List
+@type struct<poselist>[]
+@desc List of pose here
+
+@arg note
+@text Note
+@desc This does not do anything. Just a note little box to put a note on
+@type note
+
+//========================================================================
+// * Command - Set Pose (Cell Select)
+// - Work in Progress
+//========================================================================
+
 @command cellpose
 @text Pose (Cell select)
 @desc Set the battler pose using cell position
@@ -46,8 +86,8 @@ To do list
 @min = 0
 @default 0
 
-@arg x
-@text x
+@arg y
+@text y
 @type number
 @min 0
 @default 0
@@ -58,6 +98,11 @@ To do list
 @default 5
 @min 1
 @desc How long (in frames) you want the battler to stay in that pose.
+
+//========================================================================
+// * Command - Move to position
+// - Implemented, not yet tested
+//========================================================================
 
 @command move
 @text Move
@@ -99,9 +144,14 @@ To do list
 @min 0
 @desc Jump power. Higher number, higher jump.
 
+//========================================================================
+// * Command - Anchor Home
+// - Changed, not yet implemented
+//========================================================================
+
 @command anchorHome
 @text Anchor Position
-@desc Anchor current position as the new home position
+@desc Anchor position as the new home position relative to ...
 
 @arg x
 @text X-Axis
@@ -115,42 +165,67 @@ To do list
 @default 0
 @desc Relative Y-Axis coordinate
 
+@arg pivot
+@text Relative to
+@type select
+@option Current Position
+@option Targets
+@option Screen
+@default Current Position
+@desc Position relative to ...
+
+//========================================================================
+// * Command - Action Effect
+// - Implemented, not yet tested
+//========================================================================
+
 @command actionEffect
 @text Action Effect
 @desc Invoke item/skill effect to the target battler
 
-@arg apply
-@text Apply Effect
-@desc Apply Skill/Item effect to the target
+//========================================================================
+// * Command - Play Animation
+// - Changed, not yet implemented
+// Probably needs one animation flag, idk
+//========================================================================
+
+@command anim
+@text Play Animation
+@desc Show animation on the battlers
+
+@arg id
+@text Animation ID
+@type animation
+@desc Select the animation file (Selecting 0 will use the skill animation)
+@default 0
+
+@arg target
+@text To
+@type select
+@option Self
+@option Targets
+@default Target
+
+@arg wait
+@text Wait?
 @type boolean
 @on Yes
 @off No
-@default true
+@default false
+@desc Wait for animation?
 
-@arg anim
-@text Animatiomn ID
-@type animation
-@desc Select the animation file (Selecting 0 will use the skill animation)
-@default 0
-
-@command cast
-@text Cast Animation
-@desc Show animation on the subject battler (self)
-
-@arg id
-@text Animatiomn ID
-@type animation
-@desc Select the animation file (Selecting 0 will use the skill animation)
-@default 0
+//========================================================================
+// * Command - Alter Effect
+// - Not yet implemented
+//========================================================================
 
 @command changeAction
-@text Alter Skill
-@desc Invoke a modified item/skill effect to the target battler
+@text Alter Effect
+@desc Modify item/skill effect carried by the subject battler. This will not invoke the effect to the target
 
 @arg skill
 @text Skill ID
-@desc Using a different skill id to damage/do something to the target. Selecting -1 will use/reset to the original used skill.
-Use text input to put -1 as the parameter
+@desc Change skill ID. Using -1 will not change the skill. Use text input to put -1 as the parameter.
 @type skill
 @default -1
 @min -1
@@ -163,8 +238,12 @@ Use text input to put -1 as the parameter
 
 @arg formula
 @text Formula
-@desc Change the skill formula
-@type skill
+@desc Change the skill formula manually
+
+//========================================================================
+// * Command - Change Target
+// - Implemented, bug exists on POV
+//========================================================================
 
 @command changeTarget
 @text Change Target
@@ -176,7 +255,7 @@ Use text input to put -1 as the parameter
 @text Point of View
 @option First Person
 @option Third Person
-@desc First Person = If you select allies while the sequence is used by enemy, it will select the troop.
+@desc First Person = If you select allies while the sequence is used by the enemy, it will select the troop member.
 
 @arg opt
 @type select
@@ -185,13 +264,13 @@ Use text input to put -1 as the parameter
 @option Revert
 @option All
 @option All (Except user)
-@option All Enemies
+@option All Opponents
 @option All Allies
-@option Other Enemies
+@option Other Opponents
 @option Other Allies
-@option Random Enemy
+@option Random Opponent
 @option Random Ally
-@option Next Enemy
+@option Next Opponent
 @option Next Ally
 @option Next Random
 @option Self
@@ -208,27 +287,56 @@ Use text input to put -1 as the parameter
 @text Filter
 @desc Filters the target scope. Use 'target' to refers to the target candidate to filter. Must return true/false
 
+//========================================================================
+// * Command - Change Target
+// - Not yet tested
+//========================================================================
+
 @command state
 @text Change State
 @desc Change the target state
+
+@arg to
+@text To
+@type select
+@option Targets
+@option Self
+@default Targets
+@desc Target scope
+
+@arg state
+@text State ID
+@type state
+@default 1
+@desc Select state iD
 
 @arg operand
 @type select
 @option Add
 @option Remove
-@desc Add or Remove the state?
 @default Add
 @text Operand
+@desc Add or Remove the state?
+
+//========================================================================
+// * Command - Force Action
+// - Not yet implemented
+//========================================================================
 
 @command targetAction
-@text Target Force Action
-@desc Force the target to do an action sequence by calling a common event
+@text Force Action
+@desc Force the targets to do an action sequence by calling a common event
 
 @arg action
 @type common_event
 @default 1
 @text Action
 @desc Select the common event for the target.
+
+//========================================================================
+// * Command - Visible toggle
+// - Not yet tested
+//========================================================================
 
 @command visible
 @text Visible
@@ -239,6 +347,13 @@ Use text input to put -1 as the parameter
 @text toggle
 @on Visible
 @off Invisible
+@default true
+@desc Set toggles here
+
+//========================================================================
+// * Command - Flip Toggle
+// - Not yet tested
+//========================================================================
 
 @command flip
 @text Flip
@@ -249,14 +364,31 @@ Use text input to put -1 as the parameter
 @text toggle
 @on Flips
 @off Unflips
+@default false
+@desc Set toggles here
+
+//========================================================================
+// * Command - Check collapse, check if the target dies
+// - Not yet tested
+//========================================================================
 
 @command checkCollapse
 @text Check Collapse
 @desc Perform collapse effect to the target if the target is defeated
 
+//========================================================================
+// * Command - Perform collapse effect regardless of the state
+// - Not yet tested
+//========================================================================
+
 @command collapse
 @text Perform Collapse
 @desc Perform collapse effect on the subject
+
+//========================================================================
+// * Command - Force result
+// - Not yet tested
+//========================================================================
 
 @command forceResult
 @text Force Result
@@ -281,6 +413,10 @@ Use text input to put -1 as the parameter
 @default Roll
 @desc Determine the action result whether it is success or not or roll based on RNG.
 If roll success/fail, it will affect all the next action effect until you reset to the default.
+
+//========================================================================
+// * Plugin Parameters below
+//========================================================================
 
 @param div1
 @text ---------------------------
@@ -309,7 +445,7 @@ If roll success/fail, it will affect all the next action effect until you reset 
 @desc Maximum sheet Column (from left to right)
 
 @param InvertX
-@parent General Option
+@parent General Options
 @type boolean
 @default true
 @text Reverse Coordinate
@@ -343,9 +479,9 @@ If set to true, negative coordinate (for slide command) means it goes to the rig
 @type common_event
 @default 4
 
-@param Return
+@param PostAction
 @parent Default Motion
-@text Return Motion
+@text Post Action
 @type common_event
 @default 5
 
@@ -367,18 +503,6 @@ If set to true, negative coordinate (for slide command) means it goes to the rig
 @type common_event
 @default 8
 
-@param Intro
-@parent Default Motion
-@text Intro sequence
-@type common_event
-@default 0
-
-@param PreIntro
-@parent Default Motion
-@text Pre-intro
-@type common_event
-@default 0
-
 @param Skill
 @parent Default Motion
 @text Default Skill motion
@@ -391,11 +515,6 @@ If set to true, negative coordinate (for slide command) means it goes to the rig
 @type common_event
 @default 11
 
-@param Collapse
-@parent Default Motion
-@text Collapse Motion
-@type common_event
-@default 0
 */
 
 /*~struct~actorpos:
@@ -413,14 +532,37 @@ If set to true, negative coordinate (for slide command) means it goes to the rig
 @desc Y position of the n-th actor
 @default 0
 */
-const TBSE = {}
 
+/*~struct~poselist:
+@param frame
+@text Frame
+@type number
+@default 0
+@min 0
+@desc Which frame you want to pick?
+
+@param wait
+@text Wait
+@type number
+@default 5
+@min 1
+@desc How long (in frames) you want the battler to stay in that pose.
+
+@param suffix
+@text Suffix
+@type combo
+@option _2
+@option _3
+@option _4
+@option _5
+@desc Change the used spritesheet used by adding suffix. For example, Actor1_1_2 << added "_2"
+*/
+const TBSE = {}
 //-------------------------------------------------------------------------------------------------
-// IIFE alternative, because I have encapsulation
-// I know you hate this, but I do what I wanna do and I don't care
+// IIFE alternative
 //-------------------------------------------------------------------------------------------------
 TBSE.init = function(){
-    this._pluginName = "TBSE_MZ"
+    this._pluginName = document.currentScript.src.match(/.+\/(.+)\.js/)[1]
 
     this._addons = []        // Store addons name
     this._actorSprites = {}  // Store actor sprite reference
@@ -428,7 +570,6 @@ TBSE.init = function(){
     this._targets = []       // Store all affected battlers
     this._actorPos = []      // Store actor home position parameter
 
-    let _ = this;
     //=============================================================================================
     //#region Loading parameters
     //---------------------------------------------------------------------------------------------
@@ -452,15 +593,16 @@ TBSE.init = function(){
          damaged: Number(this._params.Damaged),
          pinch: Number(this._params.Pinch),
          evade: Number(this._params.Evade),
-         post: Number(this._params.Return),
+         post: Number(this._params.PostAction),
          dead: Number(this._params.Dead),
          victory: Number(this._params.Victory),
          escape: Number(this._params.Escape),
-         intro: Number(this._params.Intro),
-         preintro: Number(this._params.PreIntro),
          skill: Number(this._params.Skill),
          item: Number(this._params.Item),
-         collapse: Number(this._params.Collapse)
+
+         // Non default parameter
+         collapse: 0, 
+         intro: 0,
          //motion: 0,
      }
     //#endregion
@@ -484,10 +626,10 @@ TBSE.init = function(){
                     db._sequenceList = Object.assign({},TBSE._sequenceList)
                     db.note.split(/[\r\n]+/).forEach(line => {
                         if(line.match(TBSE._regexTag)){
-                            let name = String(RegExp.$1);
-                            let seqName = Number(RegExp.$2);
-                            if (seqName === NaN){
-                                let commonEvent = $dataCommonEvents.filter(cmv => {return cmv.name === seqName})
+                            const name = String(RegExp.$1);
+                            const seqName = Number(RegExp.$2);
+                            if (isNaN(seqName)){
+                                const commonEvent = $dataCommonEvents.filter(cmv => {return cmv.name === seqName})
                                 if(commonEvent.lenght > 0){
                                     db._sequenceList[name] = commonEvent[0].id;
                                 }
@@ -503,8 +645,8 @@ TBSE.init = function(){
 
             $dataSkills.forEach(db => {
                 if(db){
-                    db._motion = TSBS._sequenceList.skill
-                    let effects = db.effects.filter(eff => { return eff.code === 44})
+                    db._motion = TBSE._sequenceList.skill
+                    const effects = db.effects.filter(eff => { return eff.code === 44})
                     if(effects.length > 0){
                         db._motion = effects[0].dataId
                     }
@@ -513,8 +655,8 @@ TBSE.init = function(){
 
             $dataItems.forEach(db => {
                 if(db){
-                    db._motion = TSBS._sequenceList.item
-                    let effects = db.effects.filter(eff => { return eff.code === 44})
+                    db._motion = TBSE._sequenceList.item
+                    const effects = db.effects.filter(eff => { return eff.code === 44})
                     if(effects.length > 0){
                         db._motion = effects[0].dataId
                     }
@@ -553,16 +695,19 @@ TBSE.init = function(){
 
     // Array function, to remove duplicate, use it with binding.
     // Shamelessly taken from stackoverflow
-    this.uniq = function() {
-        var a = this.concat();
-        for(var i=0; i<a.length; ++i) {
-            for(var j=i+1; j<a.length; ++j) {
-                if(a[i] === a[j])
-                    a.splice(j--, 1);
+    if(!Array.prototype.uniq){
+        Array.prototype.uniq = function() {
+            const copy = this.concat();
+            const len = copy.length
+            for(var i=0; i<len; ++i) {
+                for(var j=i+1; j<len; ++j) {
+                    if(copy[i] === copy[j])
+                        copy.splice(j--, 1);
+                }
             }
-        }
-        return a;
-    };
+            return copy;
+        };
+    }
 
     // Linear movement function
     this.linearFunc = (ori, target, time, maxTime) => {
@@ -591,20 +736,26 @@ TBSE.init = function(){
     //#region Sequence Functions  
     //---------------------------------------------------------------------------------------------
     // The function binds Game_Battler, so the keyword "this" will refers to Game_Battler object
-    // If you want to make addon, make sure drop the function here (in TBSE._commands object)
+    // If you want to make addon, make sure drop the function here (in TBSE.COMMANDS object)
     //
-    // Example: TBSE._commands.cameraMove(args)
+    // Example: TBSE.COMMANDS.cameraMove(args)
     //---------------------------------------------------------------------------------------------
-    this._commands = {}
-    let cmd = this._commands
+    this.COMMANDS = {}
+    const cmd = this.COMMANDS
 
     // Manual pose sequence
     cmd.pose = function(args){
         this.sequencer()._animCell = Number(args.frame);
+        this.sequencer()._suffix = args.suffix
         args.interpreter.wait(args.wait);
     }
 
-    // Frame/Cell select pose
+    // Batch poses (WIP)
+    cmd.batchpose = function(args){
+        this.sequencer()._batchposes = JSON.parse(args.list)
+    }
+
+    // Frame/Cell select pose (WIP)
     cmd.cellPose = function(args){
         cell = 0;
         this.sequencer()._animCell = cell;
@@ -613,19 +764,12 @@ TBSE.init = function(){
 
     // Move command
     cmd.move = function(args){
-        if (args.who === "targets"){
-            args.who = "self"
-            this._targetArray.forEach(t => {
-                cmd.move.call(t, args)
-            })
-            return
-        }
-        let spr = this.sprite();
+        const spr = this.sprite();
         let targX = Number(args.x);
         let targY = Number(args.y);
-        let targets = this.sequencer()._targetArray.length > 0 ? this._targetArray : TBSE._affectedBattlers
         switch(args.to){
             case "Target":
+                const targets = this.sequencer()._targetArray.length > 0 ? this._targetArray : TBSE._affectedBattlers
                 targX += targets.reduce((total, trg)=>{ return trg.sprite().x + total}, 0)
                 targY += targets.reduce((total, trg)=>{ return trg.sprite().y + total}, 0)
                 break;
@@ -643,12 +787,15 @@ TBSE.init = function(){
 
     // Set new home
     cmd.anchorHome = function(args){
-        let spr = this.sprite();
+        const spr = this.sprite();
         this._homeX = spr.x + Number(args.x)
         this._homeY = spr.y + Number(args.y)
     }
 
-    cmd.showAnim = function(args){
+    // Show animation
+    cmd.anim = function(args){
+        const isWaiting = args.wait === "true"
+        const seq = this.sequencer()
         let animId = Number(args.anim);
         if (animId === 0){
             animId = this.sequencer()._itemInUse.animationId;
@@ -656,33 +803,34 @@ TBSE.init = function(){
                 animId = (this.isActor() ? this.attackAnimationId1() : 0)
             }
         }
-        $gameTemp.requestAnimation(this.sequencer()._targetArray, animId);
-    }
-
-    cmd.cast = function(args){
-        let animId = Number(args.anim);
-        if (animId === 0){
-            animId = this.sequencer()._itemInUse.animationId;
-            if(animId === -1){
-                animId = (this.isActor() ? this.attackAnimationId1() : 0)
-            }
+        switch(args.target){
+            case "Self": 
+                $gameTemp.requestAnimation([this], animId);
+                break;
+            case "Target":
+                $gameTemp.requestAnimation(seq._targetArray, animId);
+                break;
         }
-        $gameTemp.requestAnimation([this], animId);
+        if(isWaiting){
+
+        }
     }
 
+    // Apply action effect
     cmd.actionEffect = function(args){
-        let seq = this.sequencer()
-        seq._targetArray.forEach(target => {
+        const seq = this.sequencer()
+        for(const target of seq._targetArray){
             seq._action.apply(target);
             if (target.shouldPopupDamage()){
                 target.startDamagePopup();
             }
-        })
+        }
         if(this.shouldPopupDamage()){
             this.startDamagePopup();
         }
     }
 
+    // Change used skill
     cmd.changeAction = function(args){
         id = Number(args.skill)
         if(id === -1){
@@ -693,6 +841,7 @@ TBSE.init = function(){
         
     }
 
+    // Force the result 
     cmd.forceResult = function(args){
         if (this.sequencer().noTarget()){
             return;
@@ -710,7 +859,7 @@ TBSE.init = function(){
                 break;
         }
         const targets = this.sequencer()._targetArray
-        let action = this.sequencer()._action
+        const action = this.sequencer()._action
         switch(args.opt){
             case "Hit":
                 if(result === 2){
@@ -766,8 +915,9 @@ TBSE.init = function(){
         }
     }
 
+    // Change the current target into something else
     cmd.changeTarget = function(args){
-        let seq = this.sequencer()
+        const seq = this.sequencer()
         let newTargets = []
         switch(args.opt){
             case "Revert":
@@ -779,25 +929,25 @@ TBSE.init = function(){
             case "All (Except user)":
                 newTargets = $gameParty.members().concat($gameTroop.members()).filter(t => {t !== this})
                 break;
-            case "All Enemies":
+            case "All Opponents":
                 newTargets = this.determineUnit(args.pov, true).members();
                 break;
             case "All Allies":
                 newTargets = this.determineUnit(args.pov, false).members();
                 break;
-            case "Other Enemies":
+            case "Other Opponents":
                 newTargets = this.determineUnit(args.pov, true).members().filter(t => { return !seq._targetArray.includes(t)});
                 break;
             case "Other Allies":
                 newTargets = this.determineUnit(args.pov, false).members().filter(t => { return !seq._targetArray.includes(t)});
                 break;
-            case "Random Enemy":
+            case "Random Opponent":
                 newTargets = [this.determineUnit(args.pov, true).randomTarget()];
                 break;
             case "Random Ally":
                 newTargets = [TBSE.sample(this.determineUnit(args.pov, false).members())] 
                 break;
-            case "Next Enemy":
+            case "Next Opponent":
                 newTarget = TBSE.sample(this.determineUnit(args.pov, true).members().filter((m) => { return !this.sequencer()._victims.includes(m)}))
                 newTargets = newTarget !== undefined ? [newTarget] : [];
             case "Next Ally":
@@ -816,7 +966,7 @@ TBSE.init = function(){
             newTargets = newTargets.filter(t => { return t.isAlive() })
         }
         TBSE._affectedBattlers = TBSE._affectedBattlers.concat(newTargets);
-        TBSE._affectedBattlers = TBSE.uniq.call(TBSE._affectedBattlers);
+        TBSE._affectedBattlers = TBSE._affectedBattlers.uniq()
         seq._victims = seq._victims.concat(newTargets);
         seq._targetArray = newTargets;
     }
@@ -829,6 +979,7 @@ TBSE.init = function(){
     //---------------------------------------------------------------------------------------------
     TBSE.Sequencer = class {
         constructor(battler){
+            this._suffix = ""
             this._isActor = battler.isActor()
             this._battlerID = this._isActor ? battler.actorId() : battler.index();
             this._action = new TBSE.Action(battler);
@@ -841,8 +992,8 @@ TBSE.init = function(){
         clear(){
             this._animCell = 0              // Store the current shown sheet frame
             this._itemInUse = null          // Store the currently used item/skill
-            this._oriTargets = []           // Store the original target
-            this._targetArray = []          // Store the current target
+            this._oriTargets = []           // Store the original targets
+            this._targetArray = []          // Store the current targets
             this._flip = false              // Determine if the battler image is flipped
             this._originalItemUse = null    // Store the original item use
             this._victims = []              // All target victims (not necessarily a victim, it just a funny variable name)
@@ -884,7 +1035,7 @@ TBSE.init = function(){
         performActionSequence(){
             if (this._itemInUse){
                 const actionId = this._itemInUse._motion
-                this._interpreter.setup(actionId, "action", this.postAction)
+                this._interpreter.setup(actionId, "action", this.postAction, this)
                 this.clearActionData()
             } 
         }
@@ -893,7 +1044,7 @@ TBSE.init = function(){
         postAction(){
             const endFunc = function() { this.startIdleMotion() };
             const actionId = this.dataBattler()._sequenceList.post
-            this._interpreter.setup(actionId, "action", endFunc)
+            this._interpreter.setup(actionId, "action", endFunc, this)
         }
         // ↓
         // ↓ -- Back to idle
@@ -903,14 +1054,14 @@ TBSE.init = function(){
         
         // Will be change later
         // Idle motion priority
-        // Dead motion -- State affected -- Pinch -- Equipment(?) -- Class based -- Actor idle
+        // Dead motion -- Casting -- State affected -- Pinch -- Equipment(?) -- Class based -- Actor idle
         idleMotion(){
             return this.dataBattler()._sequenceList.idle;
         }
 
         clearActionData(){
             this._action.resetForcedResult()
-            this._actionRecord.clear()
+            this._actionRecord.clearRecord()
         }
 
         motionEvade(){
@@ -963,10 +1114,10 @@ TBSE.init = function(){
         // Why there is no same function name to refers to the battler database for both actor and
         // enemy is beyond me, smh.
         dataBattler(){
-            if (this._battler.isActor()){
-                return this._battler.actor();
+            if (this._isActor){
+                return this.battler().actor();
             }else{
-                return this._battler.enemy();
+                return this.battler().enemy();
             }
         }
     }
@@ -976,65 +1127,75 @@ TBSE.init = function(){
     //=============================================================================================
     //#region TBSE.Sequence_Interpreter < Game_Interpreter
     //---------------------------------------------------------------------------------------------
-    // Borrowing event interpreter for sequencer
-    TBSE.Sequence_Interpreter = function(battler, depth){
-        Game_Interpreter.prototype.initialize.call(this, depth);
-        this._isActor = battler.isActor()
-        this._battlerID = this._isActor ? battler.actorId() : battler.index();
-    }
-    TBSE.Sequence_Interpreter.prototype = Object.create(Game_Interpreter.prototype);
-    TBSE.Sequence_Interpreter.prototype.constructor = TBSE.Sequence_Interpreter
-
-    let seq = TBSE.Sequence_Interpreter.prototype;
-    seq.setupChild = function(list, eventId) {
-        this._childInterpreter = new TBSE.Sequence_Interpreter(this.battler(), this._depth + 1);
-        this._childInterpreter.setup(eventId, this._phaseName);
-    };
-
-    // Avoiding circular reference
-    seq.battler = function(){
-        if(this._isActor){
-            return $gameActors.actor(this._battlerID)
-        }else{
-            return $gameTroop.members()[this._battlerID]
+    TBSE.Sequence_Interpreter = class extends Game_Interpreter{
+        constructor(battler, depth){
+            super(depth)
+            this._isActor = battler.isActor()
+            this._battlerID = this._isActor ? battler.actorId() : battler.index();    
         }
-    }
 
-    seq.terminate = function() {
-        if(this._endFunc === null){
-            Game_Interpreter.prototype.terminate.call(this);
-        }else{
-            this._endFunc.call(this);
+        setupChild(){
+            const eventId = arguments[1]
+            this._childInterpreter = new TBSE.Sequence_Interpreter(this.battler(), this._depth + 1);
+            this._childInterpreter.setup(eventId, this._phaseName);
         }
-    };
 
-    seq.ending = function(){
-        return this._list === null;
-    }
+        setup(eventId, phaseName, endFunc = null, binding = this){
+            const commonEvent = $dataCommonEvents[eventId];
+            Game_Interpreter.prototype.setup.call(this, commonEvent.list, eventId);
+            this._endFunc = endFunc
+            if (endFunc !== null){
+                this._endFunc = endFunc.bind(binding);
+            }
+            this._phaseName = phaseName;
+            this._binding = binding;
+        }
 
-    // Phase name is kinda useless for now.
-    // I'm only using it if the name is "action" it means busy/wait till finish
-    seq.setup = function(eventId, phaseName, endFunc = null) {
-        const commonEvent = $dataCommonEvents[eventId];
-        Game_Interpreter.prototype.setup.call(this, commonEvent.list, eventId);
-        this._endFunc = endFunc;
-        this._phaseName = phaseName;
-    }
-
-    seq.command357 = function(params) {
-        TBSECommand = params[0] == TBSE._pluginName || TBSE._addons.some(a => a === params[0])
-        if (TBSECommand){
-            commandName = params[1]
-            if (TBSE._commands[commandName] !== undefined){
-                args = params[3];
-                args.interpreter = this;
-                TBSE._commands[commandName].call(this.battler(),(params[3]));
-                return true
+        battler(){
+            if(this._isActor){
+                return $gameActors.actor(this._battlerID)
+            }else{
+                return $gameTroop.members()[this._battlerID]
             }
         }
-        args = params[3];
-        args.battler = this.battler();
-        return Game_Interpreter.prototype.command357.call(this, params);
+
+        dataBattler(){
+            if (this._isActor){
+                return this.battler().actor();
+            }else{
+                return this.battler().enemy();
+            }
+        }
+
+        terminate(){
+            if(this._endFunc === null){
+                Game_Interpreter.prototype.terminate.call(this);
+            }else{
+                //this._endFunc.call(this);
+                this._endFunc();
+            }
+        }
+
+        ending(){
+            return this._list === null;
+        }
+
+        // Overwriten plugin command call
+        command357(params){
+            const TBSECommand = params[0] == TBSE._pluginName || TBSE._addons.some(a => a === params[0])
+            if (TBSECommand){
+                const commandName = params[1]
+                if (TBSE.COMMANDS[commandName] !== undefined){
+                    let args = params[3];
+                    args.interpreter = this;
+                    TBSE.COMMANDS[commandName].call(this.battler(),(params[3]));
+                    return true
+                }
+            }
+            let args = params[3];
+            args.battler = this.battler();
+            return Game_Interpreter.prototype.command357.call(this, params);
+        }
     }
     //#endregion
     //=============================================================================================
@@ -1044,83 +1205,75 @@ TBSE.init = function(){
     // I'm doing this really just because I only need the apply function, and not the rest.
     //---------------------------------------------------------------------------------------------
     // Handles action effect application
-    TBSE.Action = function() {
-        Game_Action.prototype.initialize.call(this,null, false);
+    TBSE.Action = class extends Game_Action{
+        constructor(battler){
+            super(battler, false)
+            this.resetForcedResult()
+        }
+
+        resetForcedResult(){
+            this._forceResult = {           
+                hit: 0,
+                evade: 0,
+                critical: 0
+            }
+        }
+
+        item(){
+            return this.subject().sequencer()._itemInUse
+        }
+
+        isSkill(){
+            if(!this.item()){
+                return false
+            }
+            return this.item()._dataClass === "skill"
+        }
+
+        isItem(){
+            if(!this.item()){
+                return false
+            }
+            return this.item()._dataClass === "item"
+        }
+
+        // Force hit, ignore evasion
+        itemHit(target){
+            const rsult = this._forceResult.hit
+            if(rsult !== 0){
+                return rsult;
+            }
+            return Game_Action.prototype.itemHit.call(this, target)
+        }
+
+        // Force evasion, does not ignore force hit
+        itemEva(target){
+            const rsult = this._forceResult.evade
+            if(this._forceResult.hit !== 0){
+                return 0;
+            }else if (this._forceResult.evade !== 0){
+                return rsult;
+            }
+            return Game_Action.prototype.itemEva.call(this, target)
+        }
+
+        
+        itemCri(target){
+            const rsult = this._forceResult.critical
+            if(rsult !== 0){
+                return rsult;
+            }
+            return Game_Action.prototype.itemCri.call(this, target)
+        }
+
+        aliasEva(){
+            return Game_Action.prototype.itemEva.call(this, target)
+        }
+
+        aliasCri(){
+            return Game_Action.prototype.itemCri.call(this, target)
+        }
     }
-    TBSE.Action.prototype = Object.create(Game_Action.prototype);
-    TBSE.Action.prototype.constructor = TBSE.Action
-
-    protoAct = Game_Action.prototype
-    act = TBSE.Action.prototype
-
-    act.initialize = function(subject) {
-        protoAct.initialize.call(this, subject, false)
-        this.resetForcedResult()
-    };
-
-    act.resetForcedResult = function(){
-        this._forceResult = {           
-            hit: 0,
-            evade: 0,
-            critical: 0
-        }
-    }
-    // Yeah, I don't want my item being controlled by ID. Why not an actual item rather than id?
-    act.item = function() {
-        var subj = this.subject();
-        if (subj._itemInUse !== null){
-            return subj._itemInUse
-        }
-        return protoAct.item.call(this);
-    };
-    
-    act.isSkill = function() {
-        var subj = this.subject();
-        if (subj._itemInUse !== null){
-            return subj._itemInUse._dataClass === "skill"
-        }
-        return protoAct.isSkill.call(this);
-    };
-    
-    act.isItem = function() {
-        var subj = this.subject();
-        if (subj._itemInUse !== null){
-            return subj._itemInUse._dataClass === "item"
-        }
-        return protoAct.isItem.call(this);
-    };
-
-    // Force hit, ignore evasion
-    act.itemHit = function(target) {
-        const rsult = this._forceResult.hit
-        if(rsult !== 0){
-            return rsult;
-        }
-        return protoAct.itemHit.call(this, target)
-    };
-    
-    // Force evasion, does not ignore force hit
-    act.itemEva = function(target) {
-        const rsult = this._forceResult.evade
-        if(this._forceResult.hit !== 0){
-            return 0;
-        }else if (this._forceResult.evade !== 0){
-            return rsult;
-        }
-        return protoAct.itemEva.call(this, target)
-    };
-    
-    // Force critical, ignore if critical is checked or not 
-    act.itemCri = function(target) {
-        const rsult = this._forceResult.critical
-        if(rsult !== 0){
-            return rsult;
-        }
-        return protoAct.itemCri.call(this, target)
-    };
-
-    act.aliasEva = protoAct.itemEva
-    act.aliasCri = protoAct.itemCri
     //#endregion
     //=============================================================================================
 
@@ -1145,7 +1298,7 @@ TBSE.init = function(){
         }
 
         restoreRecord(actionResult){
-            Object.assign(this, actionResult)
+            return Object.assign(this, actionResult)
         }
 
         addRecord(actionResult){
@@ -1168,12 +1321,17 @@ TBSE.init = function(){
     //#region Game_Battler 
     //---------------------------------------------------------------------------------------------
     TBSE.battler = {}
-    let bb = Game_Battler.prototype;
+    const bb = Game_Battler.prototype;
 
     TBSE.battler.onBattleStart = bb.onBattleStart
     bb.onBattleStart = function(){
-        _.battler.onBattleStart.call(this);
-        this._sequencer = new TBSE.sequencer(this)
+        TBSE.battler.onBattleStart.call(this);
+        this._sequencer = new TBSE.Sequencer(this)
+    }
+
+    // Sideview battler name suffix
+    bb.svsuffix = function(){
+        return this.sequencer()._suffix
     }
 
     bb.sequencer = function(){
@@ -1236,10 +1394,10 @@ TBSE.init = function(){
     //#region Game_Actor
     //---------------------------------------------------------------------------------------------
     TBSE.actor = {}
-    let ga = Game_Actor.prototype
+    const ga = Game_Actor.prototype
 
     ga.initHomePos = function() {
-        let pos = this.index()
+        const pos = this.index()
         this._homeX = TBSE._actorPos[pos].x
         this._homeY = TBSE._actorPos[pos].y
     }
@@ -1250,6 +1408,11 @@ TBSE.init = function(){
             y: this._homeY
         }
     }
+
+    TBSE.actor.battleName = ga.battlerName
+    ga.battlerName = function() {
+        return TBSE.actor.battleName.call(this) + this.svsuffix();
+    };
 
     TBSE.actor.onBattleStart = ga.onBattleStart
     ga.onBattleStart = function(){
@@ -1263,7 +1426,7 @@ TBSE.init = function(){
     //#region Game_Enemy
     //---------------------------------------------------------------------------------------------
     TBSE.enemy = {}
-    ge = Game_Enemy.prototype
+    const ge = Game_Enemy.prototype
 
     TBSE.enemy.setup = ge.setup
     ge.setup = function(enemyId, x, y) {
@@ -1276,13 +1439,17 @@ TBSE.init = function(){
         this._homeY = this._screenY
     }
 
+    // TBSE.enemy.battleName = ge.battlerName
+    // ge.battlerName = function() {
+    //     return TBSE.enemy.battleName() + this.svsuffix();
+    // };
+
     ge.homePos = function(){
         return {
             x: this._homeX,
             y: this._homeY
         }
     }
-
     //#endregion
     //=============================================================================================
 
@@ -1290,7 +1457,7 @@ TBSE.init = function(){
     //#region Game_Party
     //---------------------------------------------------------------------------------------------
     TBSE.party = {}
-    gpt = Game_Party.prototype
+    const gpt = Game_Party.prototype
 
     TBSE.party.maxBattleMembers = gpt.maxBattleMembers
     gpt.maxBattleMembers = function() {
@@ -1306,7 +1473,7 @@ TBSE.init = function(){
     //#region Sprite_Battler
     //---------------------------------------------------------------------------------------------
     TBSE.spriteBattler = {}
-    let sb = Sprite_Battler.prototype
+    const sb = Sprite_Battler.prototype
 
     TBSE.spriteBattler.initMembers = sb.initMembers
     sb.initMembers = function(){
@@ -1362,9 +1529,9 @@ TBSE.init = function(){
         if (this._tbseMoveDuration === 0) {
             return 0
         }
-        let time = this._maxDuration - this._tbseMoveDuration
-        let gravity = this._jumpPower/(this._maxDuration/2);
-        let height = (this._jumpPower * time) - (gravity * time * (time + 1) / 2);
+        const time = this._maxDuration - this._tbseMoveDuration
+        const gravity = this._jumpPower/(this._maxDuration/2);
+        const height = (this._jumpPower * time) - (gravity * time * (time + 1) / 2);
         return Math.max(0, height);
     }
     //#endregion
@@ -1374,7 +1541,7 @@ TBSE.init = function(){
     //#region Sprite_Actor
     //---------------------------------------------------------------------------------------------
     TBSE.spriteActor = {}
-    sa = Sprite_Actor.prototype
+    const sa = Sprite_Actor.prototype
 
     TBSE.spriteActor.setBattler = sa.setBattler
     sa.setBattler = function(battler) {
@@ -1396,13 +1563,13 @@ TBSE.init = function(){
     // Overwrite update frame
     sa.updateFrame = function() {
         Sprite_Battler.prototype.updateFrame.call(this);
-        var bitmap = this._mainSprite.bitmap;
+        const bitmap = this._mainSprite.bitmap;
         if (bitmap) {
-            var animCell = this._battler._animCell;
-            var cw = bitmap.width / TBSE._maxCol;
-            var ch = bitmap.height / TBSE._maxRow;
-            var cy = Math.floor(animCell / TBSE._maxRow) * ch
-            var cx = (animCell % TBSE._maxCol) * cw
+            const animCell = this._battler.sequencer()._animCell;
+            const cw = bitmap.width / TBSE._maxCol;
+            const ch = bitmap.height / TBSE._maxRow;
+            const cy = Math.floor(animCell / TBSE._maxCol) * ch
+            const cx = (animCell % TBSE._maxCol) * cw
             this._mainSprite.setFrame(cx, cy, cw, ch);
         }
     };
@@ -1413,7 +1580,7 @@ TBSE.init = function(){
     //#region Sprite_Enemy
     //---------------------------------------------------------------------------------------------
     TBSE.spriteEnemy = {}
-    se = Sprite_Enemy.prototype
+    const se = Sprite_Enemy.prototype
 
     TBSE.spriteEnemy.setBattler = se.setBattler
     se.setBattler = function(battler) {
@@ -1429,7 +1596,7 @@ TBSE.init = function(){
     //#region Spriteset_Battle
     //---------------------------------------------------------------------------------------------
     TBSE.sprset = {}
-    sset = Spriteset_Battle.prototype
+    const sset = Spriteset_Battle.prototype
 
     TBSE.sprset.isBusy = sset.isBusy
     sset.isBusy = function() {
@@ -1451,7 +1618,7 @@ TBSE.init = function(){
     //#region Window_BattleLog (for sequence) 
     //---------------------------------------------------------------------------------------------
     TBSE.wblog = {}
-    wb = Window_BattleLog.prototype;
+    const wb = Window_BattleLog.prototype;
 
     // Refactor start action with my own
     wb.startAction = function(subject, action, targets) {
@@ -1463,7 +1630,7 @@ TBSE.init = function(){
     }
 
     wb.tbse_actionMain = function(subject, targets, item){
-        // Apply target substitute here (later)
+        // WIP, Apply target substitute here (later)
         if(targets.length == 1){
             // Substitute only possible if not AoE attack
             let t = targets[0]
@@ -1471,31 +1638,28 @@ TBSE.init = function(){
         // Copy array
         TBSE._affectedBattlers = targets.concat();
         // Probably roll the magic reflect here
-        subject.actionPrepare(targets, item)
+        subject.sequencer().actionPrepare(targets, item)
+        console.log(subject._itemInUse)
         subject.sequencer().performActionSequence();
         this.setWaitMode("Sequence");
     }
 
     wb.tbse_actionPost = function(subject, item){
-        // TBSE._affectedBattlers.forEach(t => {
-        //     let counter = subject.sequencer()._action.evaluateCounter(t);
-        //     if (counter){
-        //         this.push("tbse_actionCounter", counter)
-        //     }    
-        // })
+        // Roll attack counter here later
         this.push("waitFor", 30);
         this.push("tbse_actionEnd", subject, item);
         //this.setWaitMode("Sequence");
     }
 
+    // WIP
     wb.tbse_actionCounter = function(counter){
         this.setWaitMode("Sequence");
     }
 
     wb.tbse_actionEnd = function(subject, item){
-        subject.clearActionSequence()
+        //subject.clearActionSequence()
         for(var target of TBSE._affectedBattlers){
-            target.startIdleMotion();
+            target.sequencer().startIdleMotion();
             target.returnHome();
             target.checkCollapse();
         }
@@ -1528,10 +1692,11 @@ TBSE.init = function(){
     };
 
     Game_Unit.prototype.updateSequencer = function(){
-        this.members().forEach(m => m.updateSequencer());
+        for(const member of this.members()){
+            member.updateSequencer()
+        }
     }
 }
 
 // Initialize
 TBSE.init()
-// TBSE.init = undefined
