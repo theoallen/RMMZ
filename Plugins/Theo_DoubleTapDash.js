@@ -35,19 +35,21 @@ Theo.DoubleDash = function(){
     }
 
     $.updateDash = function(){
-        if(!this.isDashing()){
+        if(!$.tapDashing()){
             $._pressTiming = Math.max($._pressTiming - 1, 0)
         }
-        if(this.getInputDirection() === 0 && $.tapDashing() || $._pressTiming === 0){
+        if((this.getInputDirection() === 0 && $.tapDashing()) || $._pressTiming === 0){
             $.init()
         }
-        if($.isInputArrow() && !$.isDashImpossible() || !this.isDashing()){
+        if($.isInputArrow() && !$.isDashImpossible() && !this.isDashing()){
             const dirInput = this.getInputDirection()
-            if ($._dashInput_1 === dirInput){
-                $._dashInput_2 = dirInput
-            }else{
-                $._dashInput_1 = dirInput
-                $._pressTiming = 30
+            if(dirInput > 0){
+                if ($._dashInput_1 === dirInput){
+                    $._dashInput_2 = dirInput
+                }else{
+                    $._dashInput_1 = dirInput
+                    $._pressTiming = $._timingParam
+                }
             }
         }
     }
