@@ -2,14 +2,14 @@
 @target MZ
 @plugindesc Shake the target battler when they gets hit.
 @author TheoAllen
+@url https://github.com/theoallen/RMMZ/tree/master/Plugins
 @help 
 Version 1.0
 
 Shake the target battler in random directions when they gets hit.
 
-Terms of Use:
-- Free for commercial
-- Credit is optional, just do not claim.
+Terms of use:
+https://github.com/theoallen/RMMZ/blob/master/README.md
 
  @param Shake
  @text Shake
@@ -35,41 +35,45 @@ Terms of Use:
  @text Diminish
  @desc Will the shake power diminished over the time? (Getting slower overtime)
  @default true
-
  */
+/*
+Change log
+version 1.0.0   = Finished the plugin
+version 1.1.0   = Prevent shake for healing
+*/
 var Theo = Theo || {}
 
-// I dont like IIFE notation
 Theo.ShakeBattler = function(){
-    let _ = Theo.ShakeBattler
-    _.pluginName = "Theo_ShakeBattler"
-    let params = PluginManager.parameters(_.pluginName)
-    _.power = Number(params.pwr)
-    _.duration = Number(params.dur)
-    _.diminish = params.dim === "true"
+    const $ = Theo.ShakeBattler
+    $._pluginName = document.currentScript.src.match(/.+\/(.+)\.js/)[1]
+    const params = PluginManager.parameters($._pluginName)
+    $._power = Number(params.pwr)
+    $._duration = Number(params.dur)
+    $._diminish = params.dim === "true"
 
-    _.spritebattler_updatePos = Sprite_Battler.prototype.updatePosition;
+    $.spritebattler_updatePos = Sprite_Battler.prototype.updatePosition;
     Sprite_Battler.prototype.updatePosition = function(){
-        _.spritebattler_updatePos.call(this);
+        $.spritebattler_updatePos.call(this);
         if(this._shakeDur > 0){
-            let rate = _.diminish ? this._shakeDur/_.duration : 1.0;
-            this.x += Math.random() * _.power * rate * (Math.random() >= 0.5 ? 1 : -1);
-            this.y += Math.random() * _.power * rate * (Math.random() >= 0.5 ? 1 : -1);
+            const rate = $._diminish ? this._shakeDur/$._duration : 1.0;
+            this.x += Math.random() * $._power * rate * (Math.random() >= 0.5 ? 1 : -1);
+            this.y += Math.random() * $._power * rate * (Math.random() >= 0.5 ? 1 : -1);
             this._shakeDur -= 1
         }
     }
 
-    _.initMembers = Sprite_Battler.prototype.initMembers
+    $.initMembers = Sprite_Battler.prototype.initMembers
     Sprite_Battler.prototype.initMembers = function(){
-        _.initMembers.call(this)
+        $.initMembers.call(this)
         this._shakeDur = 0;
     }
-
-    _.createDmgSpr = Sprite_Battler.prototype.createDamageSprite
+    
+    $.createDmgSpr = Sprite_Battler.prototype.createDamageSprite
     Sprite_Battler.prototype.createDamageSprite = function() {
-        _.createDmgSpr.call(this)
-        if(this._battler.result().isHit()){
-            this._shakeDur = _.duration;
+        $.createDmgSpr.call(this)
+        const res = this._battler.result()
+        if(res.isHit() && (res.hpDamage > 0 || res.mpDamage > 0 || res.tpDamage > 0 || res.isStatusAffected())){
+            this._shakeDur = $._duration;
         }
     };
 }
