@@ -15,10 +15,12 @@ n = maximum stack you can place.
 - https://github.com/theoallen/RMMZ/blob/master/README.md
 */
 
+// v1.0.1 - Fixed bug that makes the state stack indefinitely.
+
 var Theo = Theo || {}
 Theo.StackingStates = function(){
     const $ = Theo.StackingStates
-    $._version = '1.0.0'
+    $._version = '1.0.1'
 
     // Remove duplicates
     if(!Array.prototype.uniq){
@@ -54,7 +56,7 @@ Theo.StackingStates = function(){
     }
 
     Game_Battler.prototype.stateStack = function(stateId){
-        return this._states.filter(id => { id === stateId}).length
+        return this._states.filter(id => { return id === stateId}).length
     }
 
     // Overwrite
