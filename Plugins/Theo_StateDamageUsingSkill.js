@@ -7,16 +7,20 @@
 Version 1.0
 
 ♦ About:
-Allow you to use skill as slip damage instead of percentage using health/mp 
-regen rate. In this way, you could make it a flat damage, damage based on 
-user's attack, and even adding element to the damage. Or maybe, you want 
-to make the battle grow stronger each turn by adding growth effect from the 
-skill effect?
+Allow you to use a skill as slip damage instead of percentage using health/mp 
+regen rate. In this way, you could make it flat damage, damage based on the 
+user's stat, and even add elements to the damage. Or maybe, you want to make 
+the battler grow stronger each turn by adding a growth effect from the skill 
+effect? Of course, you can!
 
 ♦ How to use:
 Use this notetag in the state notebox <skill damage: id> 
 Change the ID to the skill ID you want to use as the slip damage.
- 
+
+♦ Requirement:
+The state has to be added by the item/skill effect. Not anywhere else, such
+as from the script call or change the state using eventing.
+
 Ex :
 <skill damage: 10>
 
