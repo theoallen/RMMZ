@@ -17,12 +17,12 @@ effect? Of course, you can!
 Use this notetag in the state notebox <skill damage: id> 
 Change the ID to the skill ID you want to use as the slip damage.
 
+Ex :
+<skill damage: 10>
+
 ♦ Requirement:
 The state has to be added by the item/skill effect. Not anywhere else, such
 as from the script call or change the state using eventing.
-
-Ex :
-<skill damage: 10>
 
 ♦ Terms of Use:
 https://github.com/theoallen/RMMZ/blob/master/README.md
