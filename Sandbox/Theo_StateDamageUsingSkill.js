@@ -99,17 +99,10 @@ Theo.StateDamageUsingSkill = function(){
         for(const stateId of this._states){
             if($dataStates[stateId]._skillDmg > 0 && this._stateBattler[stateId]){
                 const skill = $dataStates[stateId]._skillDmg
-                const animId = $dataSkills[skill].animationId
                 const user = $.subjectBattler(this._stateBattler[stateId])
                 const guid = $.guid()
                 BattleManager._logWindow.push("performStateSkill", user, this, skill, guid)
-                if (animId > 0){
-                    BattleManager._logWindow.push("showNormalAnimation", [this], animId, false)
-                    BattleManager._logWindow.push("waitForAnimation_StateSkill")
-                }
                 BattleManager._logWindow.push(guid) // Placeholder, because the entire JS and window battle log are stupid
-                BattleManager._logWindow.push("wait");
-                BattleManager._logWindow.push("clear");
             }
         }
     }
@@ -120,6 +113,7 @@ Theo.StateDamageUsingSkill = function(){
             (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
         );
     }
+
     //=============================================
     // Battle Log
     //=============================================
@@ -140,23 +134,36 @@ Theo.StateDamageUsingSkill = function(){
     };
 
     Window_BattleLog.prototype.performStateSkill = function(user, target, skill, guid){
-        const action = new Game_Action(user, false)
-        action.setSkill(skill)
-        action.apply(target)
-        let index = this._methods.findIndex(e => e.name === guid);
+        if (target.isAlive()){
+            const action = new Game_Action(user, false)
+            const animId = $dataSkills[skill].animationId
+            action.setSkill(skill)
+            action.apply(target)
+            let index = this._methods.findIndex(e => e.name === guid);
 
-        // Temporary change the method for compatibility
-        // Redirect queue to the designated GUID index
-        const oriPush = this.push
-        this.push = function(methodName){
-            const methodArgs = Array.prototype.slice.call(arguments, 1);
-            this._methods.splice(index, 0, { name: methodName, params: methodArgs });
+            // Temporary change the method for compatibility
+            // Redirect queue to the designated GUID index
+            const oriPush = this.push
+            this.push = function(methodName){
+                const methodArgs = Array.prototype.slice.call(arguments, 1);
+                this._methods.splice(index, 0, { name: methodName, params: methodArgs });
+                index += 1
+            }
+
+            if (animId > 0){
+                BattleManager._logWindow.push("showNormalAnimation", [target], animId, false)
+                BattleManager._logWindow.push("waitForAnimation_StateSkill")
+            }
+
+            this.displayActionResults(user, target)
+
+            BattleManager._logWindow.push("wait");
+            BattleManager._logWindow.push("clear");
+
+            this.push = oriPush
         }
-        this.displayActionResults(user, target)
-
-        index = this._methods.findIndex(e => e.name === guid);
-        this._methods.splice(index, 1)
-        this.push = oriPush
+        const removeGuid = this._methods.findIndex(e => e.name === guid);
+        this._methods.splice(removeGuid, 1)
     }
 
     Window_BattleLog.prototype.callNextMethod = function() {
