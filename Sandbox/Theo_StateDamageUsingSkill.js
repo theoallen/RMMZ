@@ -100,18 +100,9 @@ Theo.StateDamageUsingSkill = function(){
             if($dataStates[stateId]._skillDmg > 0 && this._stateBattler[stateId]){
                 const skill = $dataStates[stateId]._skillDmg
                 const user = $.subjectBattler(this._stateBattler[stateId])
-                const guid = $.guid()
                 BattleManager._logWindow.push("performStateSkill", user, this, skill, guid)
-                BattleManager._logWindow.push(guid) // Placeholder, because the entire JS and window battle log are stupid
             }
         }
-    }
-
-    // https://stackoverflow.com/questions/105034/how-to-create-a-guid-uuid
-    $.guid = function uuidv4() {
-        return ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c =>
-            (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
-        );
     }
 
     //=============================================
@@ -139,10 +130,10 @@ Theo.StateDamageUsingSkill = function(){
             const animId = $dataSkills[skill].animationId
             action.setSkill(skill)
             action.apply(target)
-            let index = this._methods.findIndex(e => e.name === guid);
+            let index = 0
 
-            // Temporary change the method for compatibility
-            // Redirect queue to the designated GUID index
+            // Temporary change the method for compatibility reason
+            // Redirect new queue at the start of the array
             const oriPush = this.push
             this.push = function(methodName){
                 const methodArgs = Array.prototype.slice.call(arguments, 1);
@@ -162,8 +153,6 @@ Theo.StateDamageUsingSkill = function(){
 
             this.push = oriPush
         }
-        const removeGuid = this._methods.findIndex(e => e.name === guid);
-        this._methods.splice(removeGuid, 1)
     }
 
     Window_BattleLog.prototype.callNextMethod = function() {
