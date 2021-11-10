@@ -16,13 +16,13 @@ Theo.BattleGrid = function(){
         point.y += vert
         return $.index(...point.valueOf())
     }
-    
+
     // Returns grid index (using direction)
     $.neighborDir = function(index, direction, times){
         if (times > 1){
             index = $.neighborDir(index, direction, times - 1)
         }
-        if (index < 0){
+        if (index < 0 || index > $.MAX_INDEX){
             return -1 // Grid doesn't exist
         }
         const point = $.point(index)
