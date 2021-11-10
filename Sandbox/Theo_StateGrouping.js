@@ -63,18 +63,6 @@ Theo.StateGrouping = function(){
         }
         return true;
     }
-    // Unique element of array
-    $.uniq = function() {
-        const copy = this.concat();
-        const len = copy.length
-        for(var i=0; i<len; ++i) {
-            for(var j=i+1; j<len; ++j) {
-                if(copy[i] === copy[j])
-                    copy.splice(j--, 1);
-            }
-        }
-        return copy;
-    }
     // Substitute for array shuffle to avoid conflict
     $.shuffle = function(){
         const len = this.length
@@ -139,7 +127,7 @@ Theo.StateGrouping = function(){
     $.dispelEffect = function(groups, amount){
         let states = this._states.filter(id => $dataStates[id].groups.some(st => groups.includes(st)))
         if (amount === null){
-            for(const stateId of $.uniq.call(states)){
+            for(const stateId of [... new Set(states)]){ // Unique element
                 this.removeState(stateId)
             }
         }else{          
