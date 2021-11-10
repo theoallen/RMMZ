@@ -26,7 +26,6 @@
 @text Dispel Tag (Specific Amount)
 @desc Tag for dispeling x number of states in this group. Don't change if you don't know how
 @default <dispel\s+(.+)\s*:\s*(\d+)\s*>
-
 */
 
 var Theo = Theo || {}
@@ -64,32 +63,28 @@ Theo.StateGrouping = function(){
         }
         return true;
     }
-
-    if(!Array.prototype.uniq){
-        Array.prototype.uniq = function() {
-            const copy = this.concat();
-            const len = copy.length
-            for(var i=0; i<len; ++i) {
-                for(var j=i+1; j<len; ++j) {
-                    if(copy[i] === copy[j])
-                        copy.splice(j--, 1);
-                }
+    // Unique element of array
+    $.uniq = function() {
+        const copy = this.concat();
+        const len = copy.length
+        for(var i=0; i<len; ++i) {
+            for(var j=i+1; j<len; ++j) {
+                if(copy[i] === copy[j])
+                    copy.splice(j--, 1);
             }
-            return copy;
-        };
-    }
-
-    if(!Array.prototype.shuffle){
-        Array.prototype.shuffle = function(){
-            const len = this.length
-            for(let i = len - 1; i > 0; i--){
-                const rand = Math.floor(Math.random() * (i + 1));
-                const temp = this[i]
-                this[i] = this[rand]
-                this[rand] = temp
-            }
-            return this
         }
+        return copy;
+    }
+    // Substitute for array shuffle to avoid conflict
+    $.shuffle = function(){
+        const len = this.length
+        for(let i = len - 1; i > 0; i--){
+            const rand = Math.floor(Math.random() * (i + 1));
+            const temp = this[i]
+            this[i] = this[rand]
+            this[rand] = temp
+        }
+        return this
     }
 
     $.loadStateDB = (state) => {
@@ -144,11 +139,10 @@ Theo.StateGrouping = function(){
     $.dispelEffect = function(groups, amount){
         let states = this._states.filter(id => $dataStates[id].groups.some(st => groups.includes(st)))
         if (amount === null){
-            for(const stateId of states.uniq()){
+            for(const stateId of $.uniq.call(states)){
                 this.removeState(stateId)
             }
-        }else{
-            
+        }else{          
             // Temporary takeover how the function works
             const oriEraseState = this.eraseState
             this.eraseState = function(stateId){
@@ -163,7 +157,7 @@ Theo.StateGrouping = function(){
                 }
             }
             
-            states = states.shuffle()
+            states = $.shuffle.call(states)
 
             for(const i of [...Array(amount).keys()]){
                 stateId = states.shift()
