@@ -29,8 +29,6 @@ https://github.com/theoallen/RMMZ/blob/master/README.md
 var Theo = Theo || {}
 Theo.StateGrouping = function(){
     const $ = Theo.StateGrouping
-    $._pluginName = document.currentScript.src.match(/.+\/(.+)\.js/)[1]
-    $.params = PluginManager.parameters($._pluginName)
 
     $.GroupREGEX = /<group\s*:\s*(.+)\s*>/i
     $.DispelREGEX = /<dispel\s+(.+)\s*>/i
