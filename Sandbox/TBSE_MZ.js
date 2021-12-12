@@ -1,10 +1,3 @@
-/*
-To do list
-- Projectile
-- Zoom
-- Summon?
-*/
-
 /*:
 @target MZ
 @plugindesc v0.1.0 - Theo's Battle Sequence Engine MZ.
@@ -22,12 +15,11 @@ the delay of each frame and all the timing on your own.
 
 //========================================================================
 // * Command - Set Pose
-// - Unit Tested, worked
 //========================================================================
 
 @command pose
 @text Pose
-@desc Set the battler pose using frame index from top left(0) to bottom right(max)
+@desc More info: https://github.com/theoallen/RMMZ/wiki/TBSE-Getting-Started#32-creating-idle-motion
 
 @arg frame
 @text Frame
@@ -53,55 +45,7 @@ the delay of each frame and all the timing on your own.
 @desc Change the used spritesheet used by adding suffix. For example, Actor1_1_2 << added "_2"
 
 //========================================================================
-// * Command - Set Pose (Batch)
-// - Draft
-//========================================================================
-
-@command batchpose
-@text Pose (Batch)
-@desc Set the battler pose using batches. To reduce the usage of event slot
-
-@arg list
-@text Pose List
-@type struct<poselist>[]
-@desc List of pose here
-
-@arg note
-@text Note
-@desc This does not do anything. Just a note little box to put a note on
-@type note
-
-//========================================================================
-// * Command - Set Pose (Cell Select)
-// - Work in Progress
-//========================================================================
-
-@command cellpose
-@text Pose (Cell select)
-@desc Set the battler pose using cell position
-
-@arg x
-@text x
-@type number
-@min = 0
-@default 0
-
-@arg y
-@text y
-@type number
-@min 0
-@default 0
-
-@arg wait
-@text Wait
-@type number
-@default 5
-@min 1
-@desc How long (in frames) you want the battler to stay in that pose.
-
-//========================================================================
 // * Command - Move to position
-// - Implemented, not yet tested
 //========================================================================
 
 @command move
@@ -146,7 +90,6 @@ the delay of each frame and all the timing on your own.
 
 //========================================================================
 // * Command - Anchor Home
-// - Changed, not yet implemented
 //========================================================================
 
 @command anchorHome
@@ -176,7 +119,6 @@ the delay of each frame and all the timing on your own.
 
 //========================================================================
 // * Command - Action Effect
-// - Implemented, not yet tested
 //========================================================================
 
 @command actionEffect
@@ -288,8 +230,7 @@ the delay of each frame and all the timing on your own.
 @desc Filters the target scope. Use 'target' to refers to the target candidate to filter. Must return true/false
 
 //========================================================================
-// * Command - Change Target
-// - Not yet tested
+// * Command - Change state
 //========================================================================
 
 @command state
@@ -320,7 +261,6 @@ the delay of each frame and all the timing on your own.
 
 //========================================================================
 // * Command - Force Action
-// - Not yet implemented
 //========================================================================
 
 @command targetAction
@@ -335,7 +275,6 @@ the delay of each frame and all the timing on your own.
 
 //========================================================================
 // * Command - Visible toggle
-// - Not yet tested
 //========================================================================
 
 @command visible
@@ -352,7 +291,6 @@ the delay of each frame and all the timing on your own.
 
 //========================================================================
 // * Command - Flip Toggle
-// - Not yet tested
 //========================================================================
 
 @command flip
@@ -369,7 +307,6 @@ the delay of each frame and all the timing on your own.
 
 //========================================================================
 // * Command - Check collapse, check if the target dies
-// - Not yet tested
 //========================================================================
 
 @command checkCollapse
@@ -378,7 +315,6 @@ the delay of each frame and all the timing on your own.
 
 //========================================================================
 // * Command - Perform collapse effect regardless of the state
-// - Not yet tested
 //========================================================================
 
 @command collapse
@@ -387,7 +323,6 @@ the delay of each frame and all the timing on your own.
 
 //========================================================================
 // * Command - Force result
-// - Not yet tested
 //========================================================================
 
 @command forceResult
@@ -495,13 +430,13 @@ If set to true, negative coordinate (for slide command) means it goes to the rig
 @parent Default Motion
 @text Victory pose
 @type common_event
-@default 7
+@default 0
 
 @param Escape
 @parent Default Motion
 @text Escape
 @type common_event
-@default 8
+@default 0
 
 @param Skill
 @parent Default Motion
@@ -611,92 +546,121 @@ TBSE.init = function(){
     //============================================================================================
     //#region Notetag loading
     //--------------------------------------------------------------------------------------------
-    this._tagMotion     = /<tbse[\s_]+motion\*s:\s*(.+)\s*>/i
-    this._regexTag      = /<tbse[\s_]+(.+)\s*:\s*(.+)\s*>/i
-    this._tagAnim       = /<animated>/i
+    this._tagMotion     = /<tbse[\s_]+motion\*s:\s*(.+)\s*>/i   // Specify motion to use for skills and states
+    this._regexTag      = /<tbse[\s_]+(.+)\s*:\s*(.+)\s*>/i     // To customzize each motion for actors and enemies
+    this._tagAnim       = /<animated>/i                         // Animated flag for enemies
     
     this.dbLoaded = DataManager.isDatabaseLoaded;
     DataManager.isDatabaseLoaded = function(){
         if (!TBSE.dbLoaded.call(this)) {return false};
         if (!TBSE._isLoaded) {
 
-            let valid = "";
-            if ($dataCommonEvents[TBSE._sequenceList.idle].list.length === 1)
-                valid += "Idle motion is not configured\n";
-            if ($dataCommonEvents[TBSE._sequenceList.damaged].list.length === 1)
-                valid += "Damaged motion is not configured\n";
-            if($dataCommonEvents[TBSE._sequenceList.pinch].list.length === 1)
-                valid += "Crisis motion is not configured\n";
-            if($dataCommonEvents[TBSE._sequenceList.evade].list.length === 1)
-                valid += "Evade motion is not configured\n";
-            if ($dataCommonEvents[TBSE._sequenceList.post].list.length === 1)
-                valid += "Post action is not configured\n";
-            if($dataCommonEvents[TBSE._sequenceList.dead].list.length === 1)
-                valid += "Dead motion is not configured\n";
-            if($dataCommonEvents[TBSE._sequenceList.skill].list.length === 1)
-                valid += "Default skill action is not configured\n";
-            if($dataCommonEvents[TBSE._sequenceList.item].list.length === 1)
-                valid += "Default item action is not configured\n";
+            let invalid = "";
+            if($dataCommonEvents[TBSE._sequenceList.idle] && $dataCommonEvents[TBSE._sequenceList.idle].list.length === 1)
+                invalid += "Idle motion is not configured\n";
+            if($dataCommonEvents[TBSE._sequenceList.damaged] && $dataCommonEvents[TBSE._sequenceList.damaged].list.length === 1)
+                invalid += "Damaged motion is not configured\n";
+            if($dataCommonEvents[TBSE._sequenceList.pinch] && $dataCommonEvents[TBSE._sequenceList.pinch].list.length === 1)
+                invalid += "Crisis motion is not configured\n";
+            if($dataCommonEvents[TBSE._sequenceList.evade] && $dataCommonEvents[TBSE._sequenceList.evade].list.length === 1)
+                invalid += "Evade motion is not configured\n";
+            if($dataCommonEvents[TBSE._sequenceList.post] && $dataCommonEvents[TBSE._sequenceList.post].list.length === 1)
+                invalid += "Post action is not configured\n";
+            if($dataCommonEvents[TBSE._sequenceList.dead] && $dataCommonEvents[TBSE._sequenceList.dead].list.length === 1)
+                invalid += "Dead motion is not configured\n";
+            if($dataCommonEvents[TBSE._sequenceList.skill] && $dataCommonEvents[TBSE._sequenceList.skill].list.length === 1)
+                invalid += "Default skill action is not configured\n";
+            if($dataCommonEvents[TBSE._sequenceList.item] && $dataCommonEvents[TBSE._sequenceList.item].list.length === 1)
+                invalid += "Default item action is not configured\n";
 
-            if (valid.length > 0){
+            if (invalid.length > 0){
                 const err = new Error(valid)
                 err.name = "TBSE - Default Motion Config Error"
                 throw err
             }
 
             // Loading default motion
-            [...$dataActors, ...$dataEnemies].forEach(db => {
-                if(db){
-                    db._sequenceList = Object.assign({},TBSE._sequenceList)
-                    db.note.split(/[\r\n]+/).forEach(line => {
-                        if(line.match(TBSE._regexTag)){
-                            const name = String(RegExp.$1);
-                            const seqName = Number(RegExp.$2);
-                            if (isNaN(seqName)){
-                                const commonEvent = $dataCommonEvents.filter(cmv => {return cmv.name === seqName})
-                                if(commonEvent.lenght > 0){
-                                    db._sequenceList[name] = commonEvent[0].id;
-                                }
-                            }else{
-                                db._sequenceList[name] = seqName;
+            for(const db of [...$dataActors, ...$dataEnemies].filter(database => database !== null)){
+                db._sequenceList = Object.assign({},TBSE._sequenceList)
+                for(const line of db.note.split(/[\r\n]+/)){
+                    if(line.match(TBSE._regexTag)){
+                        const name = String(RegExp.$1).toLowerCase();
+                        const seqName = Number(RegExp.$2);
+                        if (isNaN(seqName)){
+                            const seqNameStr = String(RegExp.$2).toLowerCase().trim()
+                            const commonEvent = $dataCommonEvents.find(cmv => {return cmv.name.toLowerCase().trim() === seqNameStr})
+                            if(commonEvent){
+                                db._sequenceList[name] = commonEvent.id;
                             }
-                        }else if(line.match(TBSE._tagAnim)){
-                            db._isAnimated = true; // This is only for Enemies
+                        }else{
+                            db._sequenceList[name] = seqName;
                         }
-                    })
-                }
-            });
-
-            $dataSkills.forEach(db => {
-                if(db){
-                    db._motion = TBSE._sequenceList.skill
-                    const effects = db.effects.filter(eff => { return eff.code === 44})
-                    if(effects.length > 0){
-                        db._motion = effects[0].dataId
+                    }else if(line.match(TBSE._tagAnim)){
+                        db._isAnimated = true; // This is only for Enemies
                     }
                 }
-            });
+                
+            }
 
-            $dataItems.forEach(db => {
-                if(db){
-                    db._motion = TBSE._sequenceList.item
-                    const effects = db.effects.filter(eff => { return eff.code === 44})
-                    if(effects.length > 0){
-                        db._motion = effects[0].dataId
+            loadSkillItem = function(db){
+                let regex = false
+                // Load using tag (in case if you want to reorganize the common event DB structure)
+                for(const line of db.note.split(/[\r\n]+/)){
+                    if(line.match(TBSE._tagMotion)){
+                        regex = true
+                        const seqName = Number(RegExp.$1);
+                        if (isNaN(seqName)){
+                            const seqNameStr = String(RegExp.$2).toLowerCase().trim()
+                            const commonEvent = $dataCommonEvents.find(cmv => {return cmv.name.toLowerCase().trim() === seqNameStr})
+                            if(commonEvent){
+                                db._motion = commonEvent.id;
+                            }
+                        }else{
+                            db._motion = seqName
+                        }
                     }
                 }
-            });
+                if(regex)
+                    return
 
-            $dataStates.forEach(db => {
-                if(db){
-                    db.note.split(/[\r\n]+/).forEach(line => {
-                        if(line.match(TBSE._tagMotion)){
-                            db._motion = Number(RegExp.$1);
-                        }
-                    })
+                // Or if you prefer to use common event to pick
+                const effects = db.effects.filter(eff => { return eff.code === 44})
+                if(effects.length > 0){
+                    db._motion = effects[0].dataId
                 }
-            });
+            }
 
+            // Load motion setting for skills
+            for(const db of $dataSkills.filter(database => database !== null)){
+                db._motion = TBSE._sequenceList.skill
+                loadSkillItem(db)
+            }
+
+            // Load motion setting for items
+            for(const db of $dataItems.filter(database => database !== null)){
+                db._motion = TBSE._sequenceList.item
+                loadSkillItem(db)
+            }
+
+            for(const db of $dataStates.filter(database => database !== null)){
+                db._motion = 0
+                // Load using tag (in case if you want to reorganize the common event DB structure)
+                for(const line of db.note.split(/[\r\n]+/)){
+                    if(line.match(TBSE._tagMotion)){
+                        regex = true
+                        const seqName = Number(RegExp.$1);
+                        if (isNaN(seqName)){
+                            const seqNameStr = String(RegExp.$2).toLowerCase().trim()
+                            const commonEvent = $dataCommonEvents.find(cmv => {return cmv.name.toLowerCase().trim() === seqNameStr})
+                            if(commonEvent){
+                                db._motion = commonEvent.id;
+                            }
+                        }else{
+                            db._motion = seqName
+                        }
+                    }
+                }
+            }
             TBSE._isLoaded = true;
         }
         return true;
@@ -719,8 +683,8 @@ TBSE.init = function(){
 
     // Array function, to remove duplicate, use it with binding.
     // Shamelessly taken from stackoverflow
-    if(!Array.prototype.uniq){
-        Array.prototype.uniq = function() {
+    if(!Array.prototype.unique){
+        Array.prototype.unique = function() {
             const copy = this.concat();
             const len = copy.length
             for(var i=0; i<len; ++i) {
@@ -774,18 +738,6 @@ TBSE.init = function(){
         args.interpreter.wait(args.wait);
     }
 
-    // Batch poses (WIP)
-    cmd.batchpose = function(args){
-        this.sequencer()._batchposes = JSON.parse(args.list)
-    }
-
-    // Frame/Cell select pose (WIP)
-    cmd.cellPose = function(args){
-        cell = 0;
-        this.sequencer()._animCell = cell;
-        args.interpreter.wait(args.wait);
-    }
-
     // Move command
     cmd.move = function(args){
         const spr = this.sprite();
@@ -813,7 +765,7 @@ TBSE.init = function(){
         spr.goto(targX, targY, args.dur, args.jump)
     }
 
-    // Set new home
+    // Set new home Position
     cmd.anchorHome = function(args){
         const spr = this.sprite();
         this._homeX = spr.x + Number(args.x)
@@ -873,7 +825,7 @@ TBSE.init = function(){
         }
     }
 
-    // Force the result 
+    // Force the result (such as force hit, force evade, force critical)
     cmd.forceResult = function(args){
         if (this.sequencer().noTarget()){
             return;
@@ -998,7 +950,7 @@ TBSE.init = function(){
             newTargets = newTargets.filter(t => { return t.isAlive() })
         }
         TBSE._affectedBattlers = TBSE._affectedBattlers.concat(newTargets);
-        TBSE._affectedBattlers = TBSE._affectedBattlers.uniq()
+        TBSE._affectedBattlers = TBSE._affectedBattlers.unique()
         seq._victims = seq._victims.concat(newTargets);
         seq._targetArray = newTargets;
     }
@@ -1055,6 +1007,7 @@ TBSE.init = function(){
         // ↓ -- Set item (before action)
         setItemUse(item, preserve = false){
             if(item){
+                // Copied for alteration
                 this._itemInUse = JsonEx.makeDeepCopy(item)
                 this._itemInUse._dataClass = (DataManager.isSkill(item) ? "skill" : "item")
                 if (preserve){
@@ -1088,7 +1041,32 @@ TBSE.init = function(){
         // Idle motion priority
         // Dead motion -- Casting -- State affected -- Pinch -- Equipment(?) -- Class based -- Actor idle
         idleMotion(){
+            // Is dead
+            if(this.battler().isDead()){
+                return this.dataBattler()._sequenceList.dead
+            }
+            // Is affected by state
+            const stateIdle = this.getStateIdle()
+            if(stateIdle > 0){
+                return stateIdle
+            }
+            // Pinch
+            if (this.inPinch()){
+                return this.dataBattler()._sequenceList.pinch
+            }
+            // Normal
             return this.dataBattler()._sequenceList.idle;
+        }
+
+        // Will be fixed later
+        getStateIdle(){
+            b = this.battler()
+            motion = b.sortStates().find(s => s._motion > 0)
+            return motion === null ? 0 : motion;
+        }
+
+        inPinch(){
+            return this.battler().hpRate <= 0.25
         }
 
         clearActionData(){
@@ -1096,7 +1074,6 @@ TBSE.init = function(){
             this._actionRecord.clearRecord()
         }
 
-        // Will be changed later
         canPlayEvadeMotion(){
             return this.battler()._result.evaded;
         }
@@ -1107,7 +1084,6 @@ TBSE.init = function(){
             this._interpreter.setup(actionId, "action", endFunc, this)
         }
 
-        // Will be changed later
         canPlayDamagedMotion(){
             return this.battler()._result.hpDamage > 0 || this.battler()._result.mpDamage !== 0;
         }
@@ -1375,6 +1351,7 @@ TBSE.init = function(){
         return this.sequencer()._suffix
     }
 
+    // Maybe changed later
     bb.sequencer = function(){
         return this._sequencer;
     }
@@ -1387,8 +1364,9 @@ TBSE.init = function(){
     }
 
     bb.updateSequencer = function(){
-        if(this._sequencer){
-            this._sequencer.update();
+        const seq = this.sequencer()
+        if(seq){
+            seq.update();
         }
     }
 
@@ -1666,7 +1644,8 @@ TBSE.init = function(){
         const item = action.item();
         this.displayAction(subject, item);
         this.push("tbse_actionMain", subject, targets, item);
-        this.push("tbse_actionPost", subject, item);
+        //this.push("tbse_actionPost", subject, item);
+        this.push("tbse_actionEnd", subject, item);
     }
 
     wb.tbse_actionMain = function(subject, targets, item){
@@ -1701,6 +1680,7 @@ TBSE.init = function(){
             target.returnHome();
             target.checkCollapse();
         }
+        subject.returnHome()
         TBSE._affectedBattlers = [];
         BattleManager.endAction();
         this._waitMode = "";
