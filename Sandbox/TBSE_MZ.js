@@ -265,7 +265,8 @@ the delay of each frame and all the timing on your own.
 
 @command targetAction
 @text Force Action
-@desc Force the targets to do an action sequence by calling a common event
+@desc Force the targets to do an action sequence by calling a common event. 
+The target is set to the one who's calling the command.
 
 @arg action
 @type common_event
@@ -503,7 +504,7 @@ TBSE.init = function(){
     this._actorSprites = {}  // Store actor sprite reference
     this._enemySprites = {}  // Store enemy sprite reference
     this._targets = []       // Store all affected battlers
-    this._actorPos = []      // Store actor home position parameter
+    this._actorPos = []      // Store actor initial home positio
 
     //=============================================================================================
     //#region Loading parameters
@@ -522,7 +523,7 @@ TBSE.init = function(){
      this._maxCol = Number(this._params.SheetColumn)
      this._invertX = this._params.InvertX === "true"
 
-     // Sequence template
+     // Sequence default template
      this._sequenceList = {
          idle: Number(this._params.Idle),
          damaged: Number(this._params.Damaged),
@@ -538,7 +539,6 @@ TBSE.init = function(){
          // Non default parameter
          collapse: 0, 
          intro: 0,
-         //motion: 0,
      }
     //#endregion
     //============================================================================================
@@ -546,7 +546,7 @@ TBSE.init = function(){
     //============================================================================================
     //#region Notetag loading
     //--------------------------------------------------------------------------------------------
-    this._tagMotion     = /<tbse[\s_]+motion\*s:\s*(.+)\s*>/i   // Specify motion to use for skills and states
+    this._tagMotion     = /<tbse[\s_]+motion\s*:\s*(.+)\s*>/i   // Specify motion to use for skills and states
     this._regexTag      = /<tbse[\s_]+(.+)\s*:\s*(.+)\s*>/i     // To customzize each motion for actors and enemies
     this._tagAnim       = /<animated>/i                         // Animated flag for enemies
     
@@ -585,15 +585,17 @@ TBSE.init = function(){
                 for(const line of db.note.split(/[\r\n]+/)){
                     if(line.match(TBSE._regexTag)){
                         const name = String(RegExp.$1).toLowerCase();
-                        const seqName = Number(RegExp.$2);
-                        if (isNaN(seqName)){
+                        const seqId = Number(RegExp.$2);
+                        if (isNaN(seqId)){
                             const seqNameStr = String(RegExp.$2).toLowerCase().trim()
-                            const commonEvent = $dataCommonEvents.find(cmv => {return cmv.name.toLowerCase().trim() === seqNameStr})
+                            const commonEvent = $dataCommonEvents.find(cmv => {return cmv && cmv.name.toLowerCase().trim() === seqNameStr})
                             if(commonEvent){
                                 db._sequenceList[name] = commonEvent.id;
+                            }else{
+                                console.log("WARNING: Common Event name " + seqNameStr + " is not found")
                             }
                         }else{
-                            db._sequenceList[name] = seqName;
+                            db._sequenceList[name] = seqId;
                         }
                     }else if(line.match(TBSE._tagAnim)){
                         db._isAnimated = true; // This is only for Enemies
@@ -604,19 +606,21 @@ TBSE.init = function(){
 
             loadSkillItem = function(db){
                 let regex = false
-                // Load using tag (in case if you want to reorganize the common event DB structure)
+                // Load by tag (in case if you want to reorganize the common event DB structure)
                 for(const line of db.note.split(/[\r\n]+/)){
                     if(line.match(TBSE._tagMotion)){
                         regex = true
-                        const seqName = Number(RegExp.$1);
-                        if (isNaN(seqName)){
-                            const seqNameStr = String(RegExp.$2).toLowerCase().trim()
-                            const commonEvent = $dataCommonEvents.find(cmv => {return cmv.name.toLowerCase().trim() === seqNameStr})
+                        const seqId = Number(RegExp.$1);
+                        if (isNaN(seqId)){
+                            const seqNameStr = String(RegExp.$1).toLowerCase().trim()
+                            const commonEvent = $dataCommonEvents.find(cmv => {return cmv && cmv.name.toLowerCase().trim() === seqNameStr})
                             if(commonEvent){
                                 db._motion = commonEvent.id;
+                            }else{
+                                console.log("WARNING: Common Event name " + seqNameStr + " is not found for skill ID: " + db.id)
                             }
                         }else{
-                            db._motion = seqName
+                            db._motion = seqId
                         }
                     }
                 }
@@ -644,19 +648,19 @@ TBSE.init = function(){
 
             for(const db of $dataStates.filter(database => database !== null)){
                 db._motion = 0
-                // Load using tag (in case if you want to reorganize the common event DB structure)
+                // Load by tag (in case if you want to reorganize the common event DB structure)
                 for(const line of db.note.split(/[\r\n]+/)){
                     if(line.match(TBSE._tagMotion)){
                         regex = true
-                        const seqName = Number(RegExp.$1);
-                        if (isNaN(seqName)){
-                            const seqNameStr = String(RegExp.$2).toLowerCase().trim()
-                            const commonEvent = $dataCommonEvents.find(cmv => {return cmv.name.toLowerCase().trim() === seqNameStr})
+                        const seqId = Number(RegExp.$1);
+                        if (isNaN(seqId)){
+                            const seqNameStr = String(RegExp.$1).toLowerCase().trim()
+                            const commonEvent = $dataCommonEvents.find(cmv => {return cmv && cmv.name.toLowerCase().trim() === seqNameStr})
                             if(commonEvent){
                                 db._motion = commonEvent.id;
                             }
                         }else{
-                            db._motion = seqName
+                            db._motion = seqId
                         }
                     }
                 }
@@ -716,6 +720,12 @@ TBSE.init = function(){
     this.clearSpriteReference = function(){
         TBSE._actorSprites = {}
         TBSE._enemySprites = {}
+    }
+
+    // Get common event based on the name
+    this.getAction = function(actionName){
+        const cmev = $dataCommonEvents.find(cmv => {return cmv && cmv.name.toLowerCase().trim() === actionName.toLowerCase().trim()})
+        return cmev ? cmev.id : 0
     }
     //#endregion
     //=============================================================================================
@@ -817,11 +827,15 @@ TBSE.init = function(){
 
     // Change used skill
     cmd.changeAction = function(args){
-        id = Number(args.skill)
+        const id = Number(args.skill)
         if(id === -1){
             this.sequencer().restoreItem()
         } else if(id > 0){
             this.sequencer().setItemUse($dataSkills[id])
+        }
+        this.sequencer()._itemInUse.damage.scale = args.scale
+        if (args.formula.length > 0){
+            this.sequencer()._itemInUse.damage.formula = args.formula
         }
     }
 
@@ -954,6 +968,32 @@ TBSE.init = function(){
         seq._victims = seq._victims.concat(newTargets);
         seq._targetArray = newTargets;
     }
+
+    cmd.flip = function(args){
+        this.sequencer()._flip = "true" === args.toggle
+    }
+
+    cmd.visible = function(args){
+        this.sequencer()._visible = "true" === args.toggle
+    }
+
+    cmd.state = function(args){
+        const targets = (args.to === "Self" ? [this] : this.sequencer()._targetArray)
+        for(const t of targets){
+            if (args.operand === "Add"){
+                t.addState(Number(args.state))
+            }else{
+                t.removeState(Number(args.state))
+            }
+        }
+    }
+
+    cmd.targetAction = function(args){
+        for(const t of this.sequencer()._targetArray){
+            
+        }
+    }
+
     //#endregion
     //=============================================================================================
 
@@ -979,6 +1019,7 @@ TBSE.init = function(){
             this._oriTargets = []           // Store the original targets
             this._targetArray = []          // Store the current targets
             this._flip = false              // Determine if the battler image is flipped
+            this._visible = true            // Determine if the battler is visible
             this._originalItemUse = null    // Store the original item use
             this._victims = []              // All target victims (not necessarily a victim, it just a funny variable name)
         }
@@ -1010,6 +1051,7 @@ TBSE.init = function(){
                 // Copied for alteration
                 this._itemInUse = JsonEx.makeDeepCopy(item)
                 this._itemInUse._dataClass = (DataManager.isSkill(item) ? "skill" : "item")
+                this._itemInUse.damage.scale = "1.0" // Added for damage scaling
                 if (preserve){
                     this._originalItemUse = item
                 }
@@ -1021,7 +1063,7 @@ TBSE.init = function(){
             if (this._itemInUse){
                 const actionId = this._itemInUse._motion
                 this._interpreter.setup(actionId, "action", this.postAction, this)
-                this.clearActionData()
+                this.clearActionRecord()
             } 
         }
         // ↓
@@ -1036,10 +1078,24 @@ TBSE.init = function(){
         startIdleMotion(){
             this._interpreter.setup(this.idleMotion(), "idle", function() { this._index = 0} );
         }
-        
-        // Will be change later
+
+        // Modular action sequence
+        doAction(actionId, endFunc = function() { this.startIdleMotion() } ){
+            if(isNaN(actionId)){
+                const id = TBSE.getAction(String(actionId))
+                if (id > 0){
+                    this._interpreter.setup(id, "action", endFunc, this)
+                }else{
+                    console.log("WARNING: Common Event name " + actionId + " is not found. Skipping command")
+                }
+            }else{
+                this._interpreter.setup(actionId, "action", endFunc, this)
+            }
+        }
+
+        // Will be change later, probably
         // Idle motion priority
-        // Dead motion -- Casting -- State affected -- Pinch -- Equipment(?) -- Class based -- Actor idle
+        // Dead motion -- Casting -- State affected -- Pinch -- Equipment(?) -- Class based -- Regular idle
         idleMotion(){
             // Is dead
             if(this.battler().isDead()){
@@ -1060,16 +1116,22 @@ TBSE.init = function(){
 
         // Will be fixed later
         getStateIdle(){
-            b = this.battler()
-            motion = b.sortStates().find(s => s._motion > 0)
-            return motion === null ? 0 : motion;
+            const b = this.battler()
+            if (b === undefined)
+                return 0
+            const states = b.sortStates()
+            if (states){
+                const motionId = states.find(s => s._motion > 0)
+                return motionId ? motionId : 0
+            }
+            return 0
         }
 
         inPinch(){
             return this.battler().hpRate <= 0.25
         }
 
-        clearActionData(){
+        clearActionRecord(){
             this._action.resetForcedResult()
             this._actionRecord.clearRecord()
         }
@@ -1188,7 +1250,6 @@ TBSE.init = function(){
             if(this._endFunc === null){
                 Game_Interpreter.prototype.terminate.call(this);
             }else{
-                //this._endFunc.call(this);
                 this._endFunc();
             }
         }
@@ -1207,6 +1268,8 @@ TBSE.init = function(){
                     args.interpreter = this;
                     TBSE.COMMANDS[commandName].call(this.battler(),(params[3]));
                     return true
+                }else{
+                    console.log("WARNING: Command name " + commandName + " is undefined. If this is a command addon, make sure that it is not a typo. Skipping instruction")
                 }
             }
             const args = params[3];
@@ -1283,12 +1346,17 @@ TBSE.init = function(){
             return Game_Action.prototype.itemCri.call(this, target)
         }
 
-        aliasEva(){
+        aliasEva(target){
             return Game_Action.prototype.itemEva.call(this, target)
         }
 
-        aliasCri(){
+        aliasCri(target){
             return Game_Action.prototype.itemCri.call(this, target)
+        }
+
+        // Scaling damage formula
+        evalDamageFormula(target){
+            return Game_Action.prototype.evalDamageFormula.call(this, target) * eval(this.item().damage.scale)
         }
     }
     //#endregion
@@ -1351,7 +1419,6 @@ TBSE.init = function(){
         return this.sequencer()._suffix
     }
 
-    // Maybe changed later
     bb.sequencer = function(){
         return this._sequencer;
     }
@@ -1403,6 +1470,7 @@ TBSE.init = function(){
         this.sprite().goto(home.x, home.y, 10, 0)
     }
 
+    // Check if elegible for collapse effect (i.e, dead) - WIP
     bb.checkCollapse = function(){
 
     }
@@ -1438,6 +1506,15 @@ TBSE.init = function(){
         this.initHomePos()
         TBSE.actor.onBattleStart.call(this)
     }
+
+    // Overwrite
+    ga.isSpriteVisible = function() {
+        const seq = this.sequencer()
+        if(seq){
+            return seq._visible
+        }
+        return false
+    };
     //#endregion
     //=============================================================================================
 
@@ -1478,6 +1555,7 @@ TBSE.init = function(){
     TBSE.party = {}
     const gpt = Game_Party.prototype
 
+    // Party size is based on the assigned coordinate in the actor pos configuration
     TBSE.party.maxBattleMembers = gpt.maxBattleMembers
     gpt.maxBattleMembers = function() {
         if($gameSystem.isSideView()){
@@ -1516,6 +1594,26 @@ TBSE.init = function(){
         TBSE.spriteBattler.setHome.call(this, x, y)
     };
 
+    // Overwrite update visibility
+    sb.updateVisibility = function() {
+        Sprite_Clickable.prototype.updateVisibility.call(this);
+        if (!this._battler) {
+            this.visible = false;
+        }else{
+            this.visible = this._battler.isSpriteVisible()
+        }
+    };
+
+    TBSE.spriteBattler.updateMain = sb.updateMain
+    sb.updateMain = function(){
+        TBSE.spriteBattler.updateMain.call(this)
+        // Mirror function is kinda stupid.
+        if(this._battler){
+            this.scale.x = Math.abs(this.scale.x) * (this._battler.sequencer()._flip ? -1 : 1)
+        }
+    }
+
+    // Overwrite update position
     sb.updatePosition = function() {
         if (this._tbseMoveDuration > 0) {
             const time = this._maxDuration - this._tbseMoveDuration
@@ -1644,39 +1742,24 @@ TBSE.init = function(){
         const item = action.item();
         this.displayAction(subject, item);
         this.push("tbse_actionMain", subject, targets, item);
-        //this.push("tbse_actionPost", subject, item);
         this.push("tbse_actionEnd", subject, item);
     }
 
     wb.tbse_actionMain = function(subject, targets, item){
-        // WIP, Apply target substitute here (later)
-        if(targets.length == 1){
-            // Substitute only possible if not AoE attack
-            let t = targets[0]
-        }
-        // Copy array
+        // Probably substitute function here
+
+        // Copy array (for record)
         TBSE._affectedBattlers = targets.concat();
-        // Probably roll the magic reflect here
         subject.sequencer().actionPrepare(targets, item)
         subject.sequencer().performActionSequence();
         this.setWaitMode("Sequence");
     }
 
-    wb.tbse_actionPost = function(subject, item){
-        // Roll attack counter here later
-        //this.setWaitMode("Sequence");
-        //this.push("waitFor", 30);
-        this.push("tbse_actionEnd", subject, item);
-    }
-
-    // WIP
-    wb.tbse_actionCounter = function(counter){
-        this.setWaitMode("Sequence");
-    }
-
     wb.tbse_actionEnd = function(subject, item){
-        for(var target of TBSE._affectedBattlers){
-            //target.sequencer().startIdleMotion();
+        // Probably add reaction counter here before drawing a conclusion.
+
+        // Conclusion
+        for(const target of TBSE._affectedBattlers){
             target.returnHome();
             target.checkCollapse();
         }
