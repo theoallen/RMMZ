@@ -64,15 +64,15 @@ the delay of each frame and all the timing on your own.
 
 @arg x
 @text X-Axis
-@type number
+@type text
 @default 0
-@desc Relative X-Axis coordinate
+@desc Relative X-Axis coordinate. JS syntax is ok
 
 @arg y
 @text Y-Axis
-@type number
+@type text
 @default 0
-@desc Relative Y-Axis coordinate
+@desc Relative Y-Axis coordinate. JS syntax is ok
 
 @arg dur
 @text Duration
@@ -98,15 +98,15 @@ the delay of each frame and all the timing on your own.
 
 @arg x
 @text X-Axis
-@type number
+@type text
 @default 0
-@desc Relative X-Axis coordinate
+@desc Relative X-Axis coordinate. JS syntax is ok
 
 @arg y
 @text Y-Axis
-@type number
+@type text
 @default 0
-@desc Relative Y-Axis coordinate
+@desc Relative Y-Axis coordinate. JS syntax is ok
 
 @arg pivot
 @text Relative to
@@ -127,8 +127,6 @@ the delay of each frame and all the timing on your own.
 
 //========================================================================
 // * Command - Play Animation
-// - Changed, not yet implemented
-// Probably needs one animation flag, idk
 //========================================================================
 
 @command anim
@@ -142,23 +140,23 @@ the delay of each frame and all the timing on your own.
 @default 0
 
 @arg target
-@text To
+@text On
 @type select
 @option Self
 @option Targets
-@default Target
+@default Targets
+@desc Play animation on the target
 
-@arg wait
-@text Wait?
+@arg mirror
 @type boolean
-@on Yes
-@off No
+@text Mirror
+@on true
+@off false
 @default false
-@desc Wait for animation?
+@desc Set animation mirror here
 
 //========================================================================
 // * Command - Alter Effect
-// - Not yet implemented
 //========================================================================
 
 @command changeAction
@@ -320,7 +318,7 @@ The target is set to the one who's calling the command.
 
 @command collapse
 @text Perform Collapse
-@desc Perform collapse effect on the subject
+@desc Perform collapse effect on the subject. Used for collapse motion
 
 //========================================================================
 // * Command - Force result
@@ -384,9 +382,18 @@ If roll success/fail, it will affect all the next action effect until you reset 
 @parent General Options
 @type boolean
 @default true
-@text Reverse Coordinate
-@desc Reverse coordinate for enemies (so that you could use the same sequence for enemies).
-If set to true, negative coordinate (for slide command) means it goes to the right.
+@text Invert X
+@desc Invert X axis for enemies (so that you could use the same sequence for enemies).
+
+@param AutoMirror
+@parent General Options
+@type select
+@default Disable
+@option Disable
+@option Mirror for Actors
+@option Mirror for Enemies
+@text Auto-mirror animation
+@desc Turn ON/OFF automatic animation mirror
 
 @param div2
 @text ---------------------------
@@ -396,60 +403,70 @@ If set to true, negative coordinate (for slide command) means it goes to the rig
 @text Idle Motion
 @type common_event
 @default 1
+@desc A motion that is played continuously when idle
 
 @param Damaged
 @parent Default Motion
 @text Damaged Motion
 @type common_event
 @default 2
+@desc A motion that is played once when gets damaged
 
-@param Pinch
+@param Crisis
 @parent Default Motion
-@text Pinch Motion
+@text In Crisis Motion
 @type common_event
 @default 3
+@desc A motion that overrides idle motion when HP is low
 
 @param Evade
 @parent Default Motion
 @text Evade Motion
 @type common_event
 @default 4
+@desc A motion that is automatically played on evade
 
 @param PostAction
 @parent Default Motion
 @text Post Action
 @type common_event
 @default 5
+@desc A motion that is automatically played after doing an action
 
 @param Dead
 @parent Default Motion
 @text Dead Motion
 @type common_event
 @default 6
+@desc A motion that override when the character is dead
 
 @param Victory
 @parent Default Motion
 @text Victory pose
 @type common_event
 @default 0
+@desc A motion that is played on victory
 
 @param Escape
 @parent Default Motion
 @text Escape
 @type common_event
 @default 0
+@desc A motion that is played when escaping
 
 @param Skill
 @parent Default Motion
 @text Default Skill motion
 @type common_event
 @default 10
+@desc A default motion that is played when using skill
 
 @param Item
 @parent Default Motion
 @text Default Item motion
 @type common_event
 @default 11
+@desc A default motion that is played when using item
 
 */
 
@@ -468,36 +485,8 @@ If set to true, negative coordinate (for slide command) means it goes to the rig
 @desc Y position of the n-th actor
 @default 0
 */
-
-/*~struct~poselist:
-@param frame
-@text Frame
-@type number
-@default 0
-@min 0
-@desc Which frame you want to pick?
-
-@param wait
-@text Wait
-@type number
-@default 5
-@min 1
-@desc How long (in frames) you want the battler to stay in that pose.
-
-@param suffix
-@text Suffix
-@type combo
-@option _2
-@option _3
-@option _4
-@option _5
-@desc Change the used spritesheet used by adding suffix. For example, Actor1_1_2 << added "_2"
-*/
 const TBSE = {}
-//-------------------------------------------------------------------------------------------------
-// IIFE alternative
-//-------------------------------------------------------------------------------------------------
-TBSE.init = function(){
+TBSE.init = function() {
     this._pluginName = document.currentScript.src.match(/.+\/(.+)\.js/)[1]
 
     this._addons = []        // Store addons name
@@ -522,12 +511,13 @@ TBSE.init = function(){
      this._maxRow = Number(this._params.SheetRow)
      this._maxCol = Number(this._params.SheetColumn)
      this._invertX = this._params.InvertX === "true"
+     this._autoMirror = this._param.AutoMirror
 
      // Sequence default template
      this._sequenceList = {
          idle: Number(this._params.Idle),
          damaged: Number(this._params.Damaged),
-         pinch: Number(this._params.Pinch),
+         crisis: Number(this._params.Crisis),
          evade: Number(this._params.Evade),
          post: Number(this._params.PostAction),
          dead: Number(this._params.Dead),
@@ -583,11 +573,12 @@ TBSE.init = function(){
             for(const db of [...$dataActors, ...$dataEnemies].filter(database => database !== null)){
                 db._sequenceList = Object.assign({},TBSE._sequenceList)
                 for(const line of db.note.split(/[\r\n]+/)){
-                    if(line.match(TBSE._regexTag)){
-                        const name = String(RegExp.$1).toLowerCase();
-                        const seqId = Number(RegExp.$2);
+                    const match = line.match(TBSE._regexTag)
+                    if(match){
+                        const name = String(match[1]).toLowerCase();
+                        const seqId = Number(match[2]);
                         if (isNaN(seqId)){
-                            const seqNameStr = String(RegExp.$2).toLowerCase().trim()
+                            const seqNameStr = String(match[2]).toLowerCase().trim()
                             const commonEvent = $dataCommonEvents.find(cmv => {return cmv && cmv.name.toLowerCase().trim() === seqNameStr})
                             if(commonEvent){
                                 db._sequenceList[name] = commonEvent.id;
@@ -601,18 +592,18 @@ TBSE.init = function(){
                         db._isAnimated = true; // This is only for Enemies
                     }
                 }
-                
             }
 
             loadSkillItem = function(db){
                 let regex = false
                 // Load by tag (in case if you want to reorganize the common event DB structure)
                 for(const line of db.note.split(/[\r\n]+/)){
-                    if(line.match(TBSE._tagMotion)){
+                    const match = line.match(TBSE._tagMotion)
+                    if(match){
                         regex = true
-                        const seqId = Number(RegExp.$1);
+                        const seqId = Number(match[1]);
                         if (isNaN(seqId)){
-                            const seqNameStr = String(RegExp.$1).toLowerCase().trim()
+                            const seqNameStr = String(match[1]).toLowerCase().trim()
                             const commonEvent = $dataCommonEvents.find(cmv => {return cmv && cmv.name.toLowerCase().trim() === seqNameStr})
                             if(commonEvent){
                                 db._motion = commonEvent.id;
@@ -677,7 +668,7 @@ TBSE.init = function(){
     //--------------------------------------------------------------------------------------------
     // Global function to check if any battler is doing action sequence
     this.isSequenceBusy = () => {
-        return TBSE.allBattlers().some(battler => battler.doingAction())
+        return TBSE.allBattlers().some(battler => battler.isDoingAction())
     }
 
     // Function to get all battlers for convenience
@@ -727,6 +718,11 @@ TBSE.init = function(){
         const cmev = $dataCommonEvents.find(cmv => {return cmv && cmv.name.toLowerCase().trim() === actionName.toLowerCase().trim()})
         return cmev ? cmev.id : 0
     }
+
+    // Conditional eval for number
+    this.evalNumber = function(num){
+        return isNaN(num) ? eval(num) : Number(num)
+    }
     //#endregion
     //=============================================================================================
 
@@ -751,8 +747,8 @@ TBSE.init = function(){
     // Move command
     cmd.move = function(args){
         const spr = this.sprite();
-        let targX = Number(args.x);
-        let targY = Number(args.y);
+        let targX = TBSE.evalNumber.call(this, args.x)
+        let targY = TBSE.evalNumber.call(this, args.y)
         if (this.isEnemy() && TBSE._invertX){
             targX *= -1
         }
@@ -778,14 +774,26 @@ TBSE.init = function(){
     // Set new home Position
     cmd.anchorHome = function(args){
         const spr = this.sprite();
-        this._homeX = spr.x + Number(args.x)
-        this._homeY = spr.y + Number(args.y)
+        switch(args.pivot){
+            case "Current Position":
+                this._homeX = spr.x + TBSE.evalNumber.call(this, args.x)
+                this._homeY = spr.y + TBSE.evalNumber.call(this, args.y)
+                break;
+            case "Targets":
+                this._homeX = targets.reduce((total, trg)=>{ return trg.sprite().x + total}, 0) + TBSE.evalNumber.call(this, args.x)
+                this._homeY = targets.reduce((total, trg)=>{ return trg.sprite().y + total}, 0) + TBSE.evalNumber.call(this, args.y)
+                break;
+            case "Screen":
+                this._homeX = TBSE.evalNumber.call(this, args.x)
+                this._homeY = TBSE.evalNumber.call(this, args.y)
+        }
     }
 
     // Show animation
     cmd.anim = function(args){
         const isWaiting = args.wait === "true"
         const seq = this.sequencer()
+        const mirror = args.mirror === "true"
         let animId = Number(args.id);
         if (animId === 0){
             animId = this.sequencer()._itemInUse.animationId;
@@ -795,14 +803,14 @@ TBSE.init = function(){
         }
         switch(args.target){
             case "Self": 
-                $gameTemp.requestAnimation([this], animId);
+                $gameTemp.requestAnimation([this], animId, mirror);
                 break;
-            case "Target":
-                $gameTemp.requestAnimation(seq._targetArray, animId);
+            case "Targets":
+                $gameTemp.requestAnimation(seq._targetArray, animId, mirror);
                 break;
         }
         if(isWaiting){
-            // Later
+            // Maybe later, maybe not
         }
     }
 
@@ -988,12 +996,17 @@ TBSE.init = function(){
         }
     }
 
+    // Force the target to do action sequence
     cmd.targetAction = function(args){
         for(const t of this.sequencer()._targetArray){
-            
+            t.sequencer().actionPrepare([this], null) // I might change the null into an actual skill later
+            t.sequencer().doAction(Number(args.action))
         }
     }
 
+    cmd.collapse = function(){
+        this.performCollapse()
+    }
     //#endregion
     //=============================================================================================
 
@@ -1021,7 +1034,7 @@ TBSE.init = function(){
             this._flip = false              // Determine if the battler image is flipped
             this._visible = true            // Determine if the battler is visible
             this._originalItemUse = null    // Store the original item use
-            this._victims = []              // All target victims (not necessarily a victim, it just a funny variable name)
+            this._victims = []              // Record All target victims (not necessarily a victim, it just a funny variable name)
         }
 
         // Avoiding circular reference
@@ -1076,6 +1089,7 @@ TBSE.init = function(){
         // ↓
         // ↓ -- Back to idle
         startIdleMotion(){
+            this._targetArray = []
             this._interpreter.setup(this.idleMotion(), "idle", function() { this._index = 0} );
         }
 
@@ -1106,15 +1120,14 @@ TBSE.init = function(){
             if(stateIdle > 0){
                 return stateIdle
             }
-            // Pinch
-            if (this.inPinch()){
-                return this.dataBattler()._sequenceList.pinch
+            // Crisis
+            if (this.inCrisis()){
+                return this.dataBattler()._sequenceList.crisis
             }
             // Normal
             return this.dataBattler()._sequenceList.idle;
         }
 
-        // Will be fixed later
         getStateIdle(){
             const b = this.battler()
             if (b === undefined)
@@ -1127,7 +1140,7 @@ TBSE.init = function(){
             return 0
         }
 
-        inPinch(){
+        inCrisis(){
             return this.battler().hpRate <= 0.25
         }
 
@@ -1414,11 +1427,20 @@ TBSE.init = function(){
         this._sequencer = new TBSE.Sequencer(this)
     }
 
+    bb.dataBattler = function(){
+        if(this.isActor()){
+            return $dataActors[this._actorId]
+        }else{
+            return $dataEnemies[this._enemyId]
+        }
+    }
+
     // Sideview battler name suffix
     bb.svsuffix = function(){
         return this.sequencer()._suffix
     }
 
+    // Get sequencer object. Might be changed if there's a saving issue or deep copy issue
     bb.sequencer = function(){
         return this._sequencer;
     }
@@ -1449,7 +1471,8 @@ TBSE.init = function(){
         this._sequencer = undefined
     }
 
-    bb.doingAction = function(){
+    // Check if the battler is busy doing action
+    bb.isDoingAction = function(){
         const seq = this.sequencer()
         if (seq === undefined){
             return false
@@ -1457,6 +1480,7 @@ TBSE.init = function(){
         return seq._interpreter._phaseName == "action" && !seq._interpreter.ending()
     }
 
+    // Record result while clearing the damage popup
     TBSE.battler.clearPopup = bb.clearDamagePopup
     bb.clearDamagePopup = function() {
         TBSE.battler.clearPopup.call(this)
@@ -1465,15 +1489,42 @@ TBSE.init = function(){
         }
     };
 
+    // Return to original position
     bb.returnHome = function(){
         const home = this.homePos()
         this.sprite().goto(home.x, home.y, 10, 0)
     }
 
-    // Check if elegible for collapse effect (i.e, dead) - WIP
+    // Check if elegible for collapse effect (i.e, dead)
     bb.checkCollapse = function(){
-
+        if(TBSE.canCollapse.call(this)){
+            const collapseKeyId = this.dataBattler()._sequenceList.collapse
+            if(collapseKeyId > 0){
+                this.sequencer().doAction(collapseKeyId)
+            }else{
+                this.performCollapse()
+            }
+            this._collapsed = true
+        }
     }
+
+    // Probably changed later if there is a bug
+    this.canCollapse = function(){
+        if(!this.sequencer()){
+            return false
+        }
+        return this.isDead() && !this._collapsed
+    }
+
+    // Refresh collapse state
+    TBSE.battler.refresh = bb.refresh
+    bb.refresh = function(){
+        TBSE.battler.refresh.call(this)
+        if(this.hp > 0){
+            this._collapsed = false
+        }
+    }
+
     //#endregion
     //=============================================================================================
 
@@ -1728,6 +1779,22 @@ TBSE.init = function(){
     sset.animationNextDelay = function() {
         return 0;
     };
+
+    // I don't agree with automatic mirror
+    sset.animationShouldMirror = function(target) {
+        let mirror = false;
+        switch(TBSE._autoMirror){
+            case "Mirror for Actors":
+                mirror = target && target.isActor && target.isActor();
+            case "Mirror for Enemies":
+                mirror = target && target.isEnemy && target.isEnemy();
+        }
+        const seq = target.sequencer()
+        if(seq && seq._flip){
+            return !mirror
+        }
+        return mirror;
+    };
     //#endregion
     //============================================================================================= 
 
@@ -1741,10 +1808,13 @@ TBSE.init = function(){
     wb.startAction = function(subject, action, targets) {
         const item = action.item();
         this.displayAction(subject, item);
+        // <Intercept reaction here later>
         this.push("tbse_actionMain", subject, targets, item);
+        // <Counter reaction here later>
         this.push("tbse_actionEnd", subject, item);
     }
 
+    // Main part of the action sequence
     wb.tbse_actionMain = function(subject, targets, item){
         // Probably substitute function here
 
@@ -1755,10 +1825,8 @@ TBSE.init = function(){
         this.setWaitMode("Sequence");
     }
 
+    // Conclusion
     wb.tbse_actionEnd = function(subject, item){
-        // Probably add reaction counter here before drawing a conclusion.
-
-        // Conclusion
         for(const target of TBSE._affectedBattlers){
             target.returnHome();
             target.checkCollapse();
@@ -1800,6 +1868,4 @@ TBSE.init = function(){
         }
     }
 }
-
-// Initialize
 TBSE.init()
