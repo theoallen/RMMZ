@@ -15,7 +15,8 @@ Use <rate: x> in the animation name to determine the rate.
 <rate: 3> = 20 FPS (This plugin default)
 <rate: 4> = 15 FPS (Default RPG Maker)
 
-Use <x: n> and <y: n> to determine the central offset.
+Use <x:n> and <y:n> to determine the central offset.
+Negative value such as <x:-100> is also allowed.
 
 ♦ Terms of Use:
 MIT
