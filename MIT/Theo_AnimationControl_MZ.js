@@ -1,6 +1,6 @@
 /*:
 @target MZ
-@plugindesc v1.0.0 - Animation FPS and Offset Control
+@plugindesc v1.0.1 - Animation FPS and Offset Control
 @url https://github.com/theoallen/RMMZ
 @author TheoAllen
 @help
@@ -33,11 +33,11 @@ MIT
 // 816
 // 624
 
-Theo = Theo || {}
+var Theo = Theo || {}
 Theo.AnimControl = function(){
     const $ = Theo.AnimControl
     $._pluginName = document.currentScript.src.match(/.+\/(.+)\.js/)[1]
-    $._version = '1.0.0'
+    $._version = '1.0.1'
 
     $._params = PluginManager.parameters($._pluginName)
     $._defaultRate = Number($._params.defrate)
