@@ -1,6 +1,6 @@
 /*:
 @target MZ
-@plugindesc v0.1.0 - Theo's Battle Sequence Engine MZ.
+@plugindesc v0.1.211227 - Theo's Battle Sequence Engine MZ.
 @help
 TBSE is spritesheet-based animation sequence plugin aiming for a free-frame 
 pick spritesheet animation sequencer. You are encouraged to use any kind 
@@ -45,11 +45,11 @@ the delay of each frame and all the timing on your own.
 @desc Change the used spritesheet used by adding suffix. For example, Actor1_1_2 << added "_2"
 
 //========================================================================
-// * Command - Move to position
+// * Command - Move to position (Subject)
 //========================================================================
 
 @command move
-@text Move
+@text Move (Subject/Caster)
 @desc Move the subject battler
 
 @arg to
@@ -61,6 +61,58 @@ the delay of each frame and all the timing on your own.
 @text To
 @default Target
 @desc Where do you want to go?
+
+@arg x
+@text X-Axis
+@type text
+@default 0
+@desc Relative X-Axis coordinate. JS syntax is ok
+
+@arg y
+@text Y-Axis
+@type text
+@default 0
+@desc Relative Y-Axis coordinate. JS syntax is ok
+
+@arg dur
+@text Duration
+@type number
+@default 10
+@min 0
+@desc How many frames you need to wait until it completes its movement.
+
+@arg jump
+@text Jump Power
+@type number
+@default 0
+@min 0
+@desc Jump power. Higher number, higher jump.
+
+//========================================================================
+// * Command - Move to position (Target)
+//========================================================================
+
+@command moveTarget
+@text Move (Target)
+@desc Move the target battler
+
+@arg to
+@type select
+@option Subject
+@option Slide
+@option Coordinate
+@option Home
+@text To
+@default Subject
+@desc Where do you want to go?
+
+@arg scope
+@type select
+@option Individual
+@option Center Mass
+@text Scope
+@default Individual
+@desc Pick whether to move individual or center mass to the target location.
 
 @arg x
 @text X-Axis
@@ -156,7 +208,7 @@ the delay of each frame and all the timing on your own.
 @desc Set animation mirror here
 
 //========================================================================
-// * Command - Alter Effect
+// * Command - Alter Effect (May be changed for more versatility)
 //========================================================================
 
 @command changeAction
@@ -186,7 +238,7 @@ the delay of each frame and all the timing on your own.
 
 @command changeTarget
 @text Change Target
-@desc Change the target scope. Condition parameter requires a valid JS syntax.
+@desc Change the target scope. Filter field requires a valid JS syntax.
 
 @arg pov
 @type select
@@ -198,9 +250,9 @@ the delay of each frame and all the timing on your own.
 
 @arg opt
 @type select
-@default Revert
-@text Scope
-@option Revert
+@default Original Targets
+@text Target Scope
+@option Original Targets
 @option All
 @option All (Except user)
 @option All Opponents
@@ -214,18 +266,22 @@ the delay of each frame and all the timing on your own.
 @option Next Ally
 @option Next Random
 @option Self
-@desc Switch the target
+@option Unchanged
+@desc Switch the target.
 
-@arg dead
-@type boolean
-@text Include dead battler?
-@default false
+@arg aliveState
+@text Alive State?
+@type select
+@option Alive Only
+@option Dead Only
+@option Both
+@default Alive Only
 @desc Determine if the scope also include dead battler.
 
 @arg filter
 @type note
 @text Filter
-@desc Filters the target scope. Use 'target' to refers to the target candidate to filter. Must return true/false
+@desc Filters the target scope. Use 'target' to refers to the target candidate to filter. Must return true/false. Not required to fill
 
 //========================================================================
 // * Command - Change state
@@ -264,7 +320,6 @@ the delay of each frame and all the timing on your own.
 @command targetAction
 @text Force Action
 @desc Force the targets to do an action sequence by calling a common event. 
-The target is set to the one who's calling the command.
 
 @arg action
 @type common_event
@@ -297,11 +352,13 @@ The target is set to the one who's calling the command.
 @desc Flip the subject battler
 
 @arg toggle
-@type boolean
+@type select
 @text toggle
-@on Flips
-@off Unflips
-@default false
+@option Flips
+@option Unflips
+@option Toggle
+@option Reset
+@default Toggle
 @desc Set toggles here
 
 //========================================================================
@@ -310,10 +367,11 @@ The target is set to the one who's calling the command.
 
 @command checkCollapse
 @text Check Collapse
-@desc Perform collapse effect to the target if the target is defeated
+@desc Perform collapse effect to the targets if the target is defeated
 
 //========================================================================
 // * Command - Perform collapse effect regardless of the state
+// To be used in custom collapse motion.
 //========================================================================
 
 @command collapse
@@ -449,10 +507,17 @@ If roll success/fail, it will affect all the next action effect until you reset 
 
 @param Escape
 @parent Default Motion
-@text Escape
+@text Escape (Success)
 @type common_event
 @default 0
-@desc A motion that is played when escaping
+@desc A motion that is played when successfully escape
+
+@param EscapeFail
+@parent Default Motion
+@text Escape (Fail)
+@type common_event
+@default 0
+@desc A motion that is played when failed to escape
 
 @param Skill
 @parent Default Motion
@@ -488,12 +553,13 @@ If roll success/fail, it will affect all the next action effect until you reset 
 const TBSE = {}
 TBSE.init = function() {
     this._pluginName = document.currentScript.src.match(/.+\/(.+)\.js/)[1]
+    this._version = '0.1.211227'  // <Major>.<Minor>.<YYMMDD>
 
-    this._addons = []        // Store addons name
-    this._actorSprites = {}  // Store actor sprite reference
-    this._enemySprites = {}  // Store enemy sprite reference
-    this._targets = []       // Store all affected battlers
-    this._actorPos = []      // Store actor initial home positio
+    this._addons = []           // Store addons name
+    this._actorSprites = {}     // Store actor sprite reference
+    this._enemySprites = {}     // Store enemy sprite reference
+    this._affectedBattlers = [] // Store all affected battlers
+    this._actorPos = []         // Store actor initial home position
 
     //=============================================================================================
     //#region Loading parameters
@@ -523,6 +589,7 @@ TBSE.init = function() {
          dead: Number(this._params.Dead),
          victory: Number(this._params.Victory),
          escape: Number(this._params.Escape),
+         escapefail: Number(this._params.EscapeFail),
          skill: Number(this._params.Skill),
          item: Number(this._params.Item),
 
@@ -538,33 +605,28 @@ TBSE.init = function() {
     //--------------------------------------------------------------------------------------------
     this._tagMotion     = /<tbse[\s_]+motion\s*:\s*(.+)\s*>/i   // Specify motion to use for skills and states
     this._regexTag      = /<tbse[\s_]+(.+)\s*:\s*(.+)\s*>/i     // To customzize each motion for actors and enemies
-    this._tagAnim       = /<animated>/i                         // Animated flag for enemies
+    this._tagAnim       = /<animated\s*:\s*(.+)\s*>/i           // Animated flag for enemies
+    this._tagFlip       = /<flip>/i
     
     this.dbLoaded = DataManager.isDatabaseLoaded;
     DataManager.isDatabaseLoaded = function(){
         if (!TBSE.dbLoaded.call(this)) {return false};
         if (!TBSE._isLoaded) {
 
-            let invalid = "";
-            if($dataCommonEvents[TBSE._sequenceList.idle] && $dataCommonEvents[TBSE._sequenceList.idle].list.length === 1)
-                invalid += "Idle motion is not configured\n";
-            if($dataCommonEvents[TBSE._sequenceList.damaged] && $dataCommonEvents[TBSE._sequenceList.damaged].list.length === 1)
-                invalid += "Damaged motion is not configured\n";
-            if($dataCommonEvents[TBSE._sequenceList.pinch] && $dataCommonEvents[TBSE._sequenceList.pinch].list.length === 1)
-                invalid += "Crisis motion is not configured\n";
-            if($dataCommonEvents[TBSE._sequenceList.evade] && $dataCommonEvents[TBSE._sequenceList.evade].list.length === 1)
-                invalid += "Evade motion is not configured\n";
-            if($dataCommonEvents[TBSE._sequenceList.post] && $dataCommonEvents[TBSE._sequenceList.post].list.length === 1)
-                invalid += "Post action is not configured\n";
-            if($dataCommonEvents[TBSE._sequenceList.dead] && $dataCommonEvents[TBSE._sequenceList.dead].list.length === 1)
-                invalid += "Dead motion is not configured\n";
-            if($dataCommonEvents[TBSE._sequenceList.skill] && $dataCommonEvents[TBSE._sequenceList.skill].list.length === 1)
-                invalid += "Default skill action is not configured\n";
-            if($dataCommonEvents[TBSE._sequenceList.item] && $dataCommonEvents[TBSE._sequenceList.item].list.length === 1)
-                invalid += "Default item action is not configured\n";
+            const motionList = [
+                [TBSE._sequenceList.idle, "Idle motion"],
+                [TBSE._sequenceList.damaged, "Damaged motion"],
+                [TBSE._sequenceList.crisis, "Crisis motion"],
+                [TBSE._sequenceList.evade, "Evade motion"],
+                [TBSE._sequenceList.post, "Post action"],
+                [TBSE._sequenceList.dead, "Dead action"],
+                [TBSE._sequenceList.skill, "Default skill action"],
+                [TBSE._sequenceList.item, "Default item action"],
+            ]
 
+            const invalid = motionList.reduce((r, m) => { return r + TBSE.isSequenceValid(...m)}, "")
             if (invalid.length > 0){
-                const err = new Error(valid)
+                const err = new Error(invalid)
                 err.name = "TBSE - Default Motion Config Error"
                 throw err
             }
@@ -588,8 +650,12 @@ TBSE.init = function() {
                         }else{
                             db._sequenceList[name] = seqId;
                         }
-                    }else if(line.match(TBSE._tagAnim)){
-                        db._isAnimated = true; // This is only for Enemies
+                    }else {
+                        const match = line.match(TBSE._tagAnim)
+                        if(match){
+                            db._isAnimated = true; // This is only for Enemies
+                            db._sprName = String(match[1])
+                        }
                     }
                 }
             }
@@ -692,7 +758,7 @@ TBSE.init = function() {
         return array[Math.floor(Math.random() * array.length)]
     }
 
-    // Clears sprite reference to freed up memories(?)
+    // Clears sprite reference
     this.clearSpriteReference = function(){
         TBSE._actorSprites = {}
         TBSE._enemySprites = {}
@@ -709,21 +775,31 @@ TBSE.init = function() {
         return isNaN(num) ? eval(num) : Number(num)
     }
 
-    // Determine unit based on POV
-    this.determineUnit = function(pov, isOpponent){
-        if(pov === "First Person"){
-            if(isOpponent){
-                return this.opponentsUnit();
-            }else{
-                return this.friendsUnit();
-            }
-        }else{
-            if(isOpponent){
-                return $gameTroop
-            }else{
-                return $gameParty
-            }
+    // Check flip
+    this.defaultFlip = function(db){
+        return db._defaultFlip ||= db.note.match(TBSE._tagFlip)
+    }
+
+    // Idiot proof
+    this.isSequenceValid = function(id, motionName){
+        // Check if the common event exist
+        if (id === 0 || $dataCommonEvents[id] === undefined){
+            return `[${motionName}] There is no common event at ID = ${id}.\n`
         }
+        // Check if there is a list
+        if($dataCommonEvents[id].list.length === 1){
+            return `[${motionName}] is not configured.\n`
+        }
+        const valid = $dataCommonEvents[id].list.find(TBSE.validCommandList)
+        if(!valid){ // Check if the list is valid
+            return `[${motionName}] is not configured correctly. Put at least one wait command or pose command.\n`
+        }
+        return ""
+    }
+
+    // For ever-growing valid list (in case of addon)
+    this.validCommandList = function(li) {
+        return li.code === 230 || (li.code === 357 && li.parameters[0] === TBSE._pluginName && li.parameters[1] === "pose")
     }
     //#endregion
     //=============================================================================================
@@ -758,8 +834,8 @@ TBSE.init = function() {
             case "Target":
                 const seq = this.sequencer()
                 const targets = seq._targetArray.length > 0 ? seq._targetArray : TBSE._affectedBattlers
-                targX += targets.reduce((total, trg)=>{ return trg.sprite().x + total}, 0)
-                targY += targets.reduce((total, trg)=>{ return trg.sprite().y + total}, 0)
+                targX += targets.reduce((total, trg)=>{ return trg.sprite().x + total}, 0) / targets.length
+                targY += targets.reduce((total, trg)=>{ return trg.sprite().y + total}, 0) / targets.length
                 break;
             case "Slide":
                 targX += spr.x;
@@ -771,6 +847,54 @@ TBSE.init = function() {
                 break;
         }
         spr.goto(targX, targY, args.dur, args.jump)
+    }
+
+    // Move command (target)
+    cmd.moveTarget = function(args){
+        const seq = this.sequencer()
+        
+        // Individual
+        if(args.scope == "Individual"){
+            for(const t of seq._targetArray){
+                const spr = t.sprite()
+                let targX = TBSE.evalNumber.call(this, args.x)
+                let targY = TBSE.evalNumber.call(this, args.y)
+                switch(args.to){
+                    case "Subject":
+                        targX += this.sprite().x
+                        targY += this.sprite().y
+                        break;
+                    case "Slide":
+                        targX += spr.x;
+                        targY += spr.y;
+                        break;
+                    case "Home":
+                        targX += t.homePos().x;
+                        targY += t.homePos().y;
+                        break;
+                }
+                spr.goto(targX, targY, args.dur, args.jump)
+            }
+
+        // Center Mass
+        }else{
+            const allTarget = seq._targetArray
+            const centerX = allTarget.reduce((total, t) => { return t.sprite().x + total }, 0) / allTarget.length
+            const centerY = allTarget.reduce((total, t) => { return t.sprite().y + total }, 0) / allTarget.length
+
+            let targX = TBSE.evalNumber.call(this, args.x)
+            let targY = TBSE.evalNumber.call(this, args.y)
+
+            switch(args.to){
+                case "Subject":
+
+                    break;
+                case "Slide":
+                    targX += centerX;
+                    targY += centerY;
+                    break;
+            }
+        }
     }
 
     // Set new home Position
@@ -906,73 +1030,164 @@ TBSE.init = function() {
                 break;
         }
     }
-
+    // Determine unit based on POV
+    this.determineUnit = function(pov, isOpponent){
+        if(pov === "First Person"){
+            if(isOpponent){
+                return this.opponentsUnit();
+            }else{
+                return this.friendsUnit();
+            }
+        }else{
+            if(isOpponent){
+                return $gameTroop
+            }else{
+                return $gameParty
+            }
+        }
+    }
+    // Must be called with binding first
+    this.filterCandidate = function(candidates){
+        let passedCandidates = candidates
+        switch(this.aliveState){
+            case "Alive Only":
+                passedCandidates = passedCandidates.filter(t => { return t.isAlive() })
+                break;
+            case "Dead Only":
+                passedCandidates = passedCandidates.filter(t => { return t.isDead() })
+                break;
+        }
+        if (this.filter.length > 0){
+            passedCandidates = passedCandidates.filter(c => eval(filter))
+        }
+        return passedCandidates
+    }
     // Change the current target into something else
     cmd.changeTarget = function(args){
         const seq = this.sequencer()
-        let newTargets = []
+        TBSE.filterCandidate.bind(args) // For convenience
+        let newTargets = seq._targetArray
         switch(args.opt){
-            // Revert to original target
-            case "Revert":
+            // Revert to default target
+            case "Original Targets":
                 newTargets = seq._oriTargets;
                 break;
+
             // All battlers without exception
             case "All":
-                newTargets = [...$gameParty.members(), ...$gameTroop.members()]
+                newTargets = TBSE.filterCandidate([...$gameParty.members(), ...$gameTroop.members()])
                 break;
+
             // All battlers excluding the user/caster
             case "All (Except user)":
-                newTargets = [...$gameParty.members(), ...$gameTroop.members()].filter(t => {return t !== this})
+                newTargets = TBSE.filterCandidate([...$gameParty.members(), ...$gameTroop.members()].filter(t => {return t !== this}))
                 break;
+
             // All opposite side of caster / troop
             case "All Opponents":
-                newTargets = TBSE.determineUnit.call(this, args.pov, true).members();
+                newTargets = TBSE.filterCandidate(TBSE.determineUnit.call(this, args.pov, true).members())
                 break;
+
             // All of caster's allies / party
             case "All Allies":
-                newTargets = TBSE.determineUnit.call(this, args.pov, false).members();
+                newTargets = TBSE.filterCandidate(TBSE.determineUnit.call(this, args.pov, false).members())
                 break;
+
             // All opposite side of caster / troop - exclude previous target
             case "Other Opponents":
-                newTargets = TBSE.determineUnit.call(this, args.pov, true).members().filter(t => { return !seq._targetArray.includes(t)});
+                newTargets = TBSE.filterCandidate(
+                    TBSE.determineUnit.call(this, args.pov, true)
+                    .members()
+                    .filter(t => { 
+                        return !seq._targetArray.includes(t)
+                    })
+                )
                 break;
+
             // All of caster's allies / party - exclude previous
             case "Other Allies":
-                newTargets = TBSE.determineUnit.call(this, args.pov, false).members().filter(t => { return !seq._targetArray.includes(t)});
+                newTargets = TBSE.filterCandidate(
+                    TBSE.determineUnit.call(this, args.pov, false)
+                    .members()
+                    .filter(t => { 
+                        return !seq._targetArray.includes(t)
+                    })
+                )
                 break;
+
             // Random select opposite side of the caster / troop - (may select the same unit twice)
             case "Random Opponent":
-                newTargets = [TBSE.determineUnit.call(this, args.pov, true).randomTarget()];
+                newTargets = [TBSE.sample(
+                    TBSE.filterCandidate(
+                        TBSE.determineUnit.call(this, args.pov, true).members()
+                    )
+                )] 
                 break;
+
             // Random select caster's ally / party - (may select the same unit twice)
             case "Random Ally":
-                newTargets = [TBSE.sample(TBSE.determineUnit.call(this, args.pov, false).members())] 
+                newTargets = [TBSE.sample(
+                    TBSE.filterCandidate(
+                        TBSE.determineUnit.call(this, args.pov, false).members()
+                    )
+                )] 
                 break;
+
             // Random select everyone - (may select the same unit twice)
             case "Random Any":
-                newTargets = TBSE.sample([...$gameParty.members(), ...$gameTroop.members()])
+                newTargets = TBSE.sample(TBSE.filterCandidate([...$gameParty.members(), ...$gameTroop.members()]))
                 break;
+
             // Random select opposite side of the caster / troop - (Can only select one, empty target is possible)
             case "Next Opponent":
-                nextTarget = TBSE.sample(TBSE.determineUnit.call(this, args.pov, true).members().filter((m) => { return !this.sequencer()._victims.includes(m)}))
+                nextTarget = TBSE.sample(
+                    TBSE.filterCandidate(
+                        TBSE.determineUnit.call(this, args.pov, true)
+                        .members()
+                        .filter((m) => { 
+                            return !this.sequencer()._victims.includes(m)
+                        })
+                    )
+                )
                 newTargets = nextTarget !== undefined ? [nextTarget] : [];
+                break;
+
             // Random select caster's ally / party - (Can only select one, empty target is possible)
             case "Next Ally":
-                nextTarget = TBSE.sample(TBSE.determineUnit.call(this, args.pov, false).members().filter((m) => { return !this.sequencer()._victims.includes(m)}))
+                nextTarget = TBSE.sample(
+                    TBSE.filterCandidate(
+                        TBSE.determineUnit.call(this, args.pov, false)
+                        .members()
+                        .filter((m) => { 
+                            return !this.sequencer()._victims.includes(m)
+                        })
+                    )
+                )
                 newTargets = newTarget !== undefined ? [nextTarget] : [];
+                break;
+                
             // Random select everyone - (Can only select one, empty target is possible)
             case "Next Random":
-                nextTarget = TBSE.sample([...$gameParty.members(), ...$gameTroop.members()].filter((m) => {
-                     return !this.sequencer()._victims.includes(m)
-                }));
+                nextTarget = TBSE.sample(
+                    TBSE.filterCandidate(
+                        [...$gameParty.members(), ...$gameTroop.members()]
+                        .filter((m) => {
+                            return !this.sequencer()._victims.includes(m)
+                        })
+                    )
+                )
                 newTargets = nextTarget !== undefined ? [nextTarget] : [];
+                break;
+
             // Target self
             case "Self":
                 newTargets = [this];
                 break;
-        }
-        if(args.dead === "false"){
-            newTargets = newTargets.filter(t => { return t.isAlive() })
+
+            // No change to the current target. But filters it based on the dead/alive state and JS filter
+            case "Unchanged":
+                newTargets = TBSE.filterCandidate(newTargets)
+                break;
         }
         const newAffectedTarget = [...TBSE._affectedBattlers, ...newTargets].filter(t => {return !TBSE._affectedBattlers.includes(t)})
         TBSE._affectedBattlers = [...TBSE._affectedBattlers, ...newAffectedTarget]
@@ -981,7 +1196,20 @@ TBSE.init = function() {
     }
 
     cmd.flip = function(args){
-        this.sequencer()._flip = "true" === args.toggle
+        switch(args.toggle.toLowerCase()){
+            case "flips":
+                this.sequencer()._flip = true
+                break;
+            case "unflips":
+                this.sequencer()._flip = false
+                break;
+            case "toggle":
+                this.sequencer()._flip = !this.sequencer()._flip
+                break;
+            case "reset":
+                this.sequencer()._flip = this.dataBattler()._defaultFlip
+                break;
+        }
     }
 
     cmd.visible = function(args){
@@ -1008,7 +1236,7 @@ TBSE.init = function() {
     }
 
     cmd.collapse = function(){
-        this.performCollapse()
+        TBSE.battler.performCollapse.call(this)
     }
 
     cmd.checkCollapse = function(){
@@ -1035,14 +1263,14 @@ TBSE.init = function() {
         }
 
         clear(){
-            this._animCell = 0              // Store the current shown sheet frame
-            this._itemInUse = null          // Store the currently used item/skill
-            this._oriTargets = []           // Store the original targets
-            this._targetArray = []          // Store the current targets
-            this._flip = false              // Determine if the battler image is flipped
-            this._visible = true            // Determine if the battler is visible
-            this._originalItemUse = null    // Store the original item use
-            this._victims = []              // Record All target victims (not necessarily a victim, it just a funny variable name)
+            this._animCell = 0                                  // Store the current shown sheet frame
+            this._itemInUse = null                              // Store the currently used item/skill
+            this._oriTargets = []                               // Store the original targets
+            this._targetArray = []                              // Store the current targets
+            this._visible = true                                // Determine if the battler is visible
+            this._originalItemUse = null                        // Store the original item use
+            this._victims = []                                  // Record All target victims (not necessarily a victim, it just a funny variable name)
+            this._flip = TBSE.defaultFlip(this.dataBattler())   // Determine if the battler image is flipped
         }
 
         // Avoiding circular reference
@@ -1101,7 +1329,7 @@ TBSE.init = function() {
             this._interpreter.setup(this.idleMotion(), "idle", function() { this._index = 0} );
         }
 
-        // Modular action sequence
+        // Modular sequence trigger
         doAction(actionId, endFunc = function() { this.startIdleMotion() } ){
             if(isNaN(actionId)){
                 const id = TBSE.getAction(String(actionId))
@@ -1149,7 +1377,7 @@ TBSE.init = function() {
         }
 
         inCrisis(){
-            return this.battler().hpRate <= 0.25
+            return this.battler().hpRate <= 0.25 // Might be parameterized
         }
 
         clearActionRecord(){
@@ -1177,7 +1405,7 @@ TBSE.init = function() {
             this._interpreter.setup(actionId, "action", endFunc, this)
         }
 
-        // Currently unimplemented, trying to seek for the best way to implement intro sequence
+        // Currently unimplemented
         motionIntro(){
             const endFunc = function() { this.startIdleMotion() };
             const actionId = this.dataBattler()._sequenceList.intro
@@ -1186,18 +1414,24 @@ TBSE.init = function() {
 
         motionVictory(){
             const actionId = this.dataBattler()._sequenceList.victory
-            this._interpreter.setup(actionId, "action")
+            if (actionId > 0){
+                this.doAction(actionId, null)
+            }
         }
 
-        motionEscape(){
-            const actionId = this.dataBattler()._sequenceList.escape
-            this._interpreter.setup(actionId, "action")
-        }
-
-        motionCollapse(){
-            const endFunc = function() { this.startIdleMotion() };
-            const actionId = this.dataBattler()._sequenceList.collapse
-            this._interpreter.setup(actionId, "action", endFunc)
+        motionEscape(success){
+            const actionId = success ? this.dataBattler()._sequenceList.escape : this.dataBattler()._sequenceList.escapefail
+            if (actionId > 0){
+                if(success){
+                    this.doAction(actionId, null)
+                }else{
+                    const endFunc = function() { 
+                        this.battler().returnHome()
+                        this.startIdleMotion() 
+                    }
+                    this.doAction(actionId, endFunc)
+                }
+            }
         }
 
         restoreItem(){
@@ -1235,8 +1469,17 @@ TBSE.init = function() {
             this._battlerID = this._isActor ? battler.actorId() : battler.index();    
         }
 
-        setupChild(){
-            const eventId = arguments[1]
+        // Overwrite command 117 for calling common event
+        command117(params) {
+            const commonEvent = $dataCommonEvents[params[0]];
+            if (commonEvent) {
+                this.setupChild(params[0]);
+            }
+            return true;
+        }
+
+        // Overwrite setup child event
+        setupChild(eventId){
             this._childInterpreter = new TBSE.Sequence_Interpreter(this.battler(), this._depth + 1);
             this._childInterpreter.setup(eventId, this._phaseName);
         }
@@ -1366,7 +1609,6 @@ TBSE.init = function() {
             }
             return Game_Action.prototype.itemEva.call(this, target)
         }
-
         
         itemCri(target){
             const rsult = this._forceResult.critical
@@ -1515,13 +1757,7 @@ TBSE.init = function() {
     // Check if elegible for collapse effect (i.e, dead)
     bb.checkCollapse = function(){
         if(TBSE.canCollapse.call(this)){
-            const collapseKeyId = this.dataBattler()._sequenceList.collapse
-            if(collapseKeyId > 0){
-                this.sequencer().doAction(collapseKeyId)
-                this._collapsed = true
-            }else{
-                this.performCollapse()
-            }
+            this.performCollapse()
         }
     }
 
@@ -1544,9 +1780,19 @@ TBSE.init = function() {
 
     TBSE.battler.performCollapse = bb.performCollapse
     bb.performCollapse = function() {
-        TBSE.battler.performCollapse.call(this)
+        const collapseKeyId = this.dataBattler()._sequenceList.collapse
+        if(collapseKeyId > 0){
+            this.sequencer().doAction(collapseKeyId)
+        }else{
+            TBSE.battler.performCollapse.call(this)
+        }
         this._collapsed = true
     };
+
+    // Will be changed later
+    bb.counterSkill = function(){
+        return $dataSkills[1]
+    }
     
 
     //#endregion
@@ -1590,6 +1836,22 @@ TBSE.init = function() {
         }
         return false
     };
+
+    // Overwrite the escape motion
+    ga.performEscape = function() {
+        if (this.canMove()) {
+            this.requestMotion("escape");
+        }
+    };
+
+    // Overwrite the victory motion
+    ga.performVictory = function() {
+        this.setActionState("done");
+        if (this.canMove()) {
+            this.sequencer().motionVictory()
+        }
+    };
+
     //#endregion
     //=============================================================================================
 
@@ -1610,10 +1872,13 @@ TBSE.init = function() {
         this._homeY = this._screenY
     }
 
-    // TBSE.enemy.battleName = ge.battlerName
-    // ge.battlerName = function() {
-    //     return TBSE.enemy.battleName() + this.svsuffix();
-    // };
+    TBSE.enemy.battleName = ge.battlerName
+    ge.battlerName = function() {
+        if (this.dataBattler()._isAnimated){
+            return this.dataBattler()._sprName + this.svsuffix()
+        }
+        return TBSE.enemy.battleName.call(this);
+    };
 
     ge.homePos = function(){
         return {
@@ -1682,7 +1947,7 @@ TBSE.init = function() {
     TBSE.spriteBattler.updateMain = sb.updateMain
     sb.updateMain = function(){
         TBSE.spriteBattler.updateMain.call(this)
-        // Mirror function is kinda stupid.
+        // This mirror function is kinda stupid.
         if(this._battler){
             this.scale.x = Math.abs(this.scale.x) * (this._battler.sequencer()._flip ? -1 : 1)
         }
@@ -1706,6 +1971,7 @@ TBSE.init = function() {
         this.y = this._displayY + this._offsetY - this.jumpHeight();
     };
 
+    // It is possible to use a different function, for example, if you want to use easing movement
     sb.goto = function(x, y, duration, jump = 0, funcName = "linearFunc"){
         this._maxDuration = duration;
         this._jumpPower = jump;
@@ -1742,18 +2008,15 @@ TBSE.init = function() {
             TBSE._actorSprites[battler._actorId] = this;
         }
     };
-
-    // Override anchor y
-    // TBSE.spriteActor.createMainSprite = sa.createMainSprite
-    // Sprite_Actor.prototype.createMainSprite = function() {
-    //     TBSE.spriteActor.createMainSprite.call(this)
-    //     this._mainSprite.anchor.y = 0.5;
-    // };
     
-    // Delete update motion. I don't need it
+    // Delete update motion. I have my own
     sa.updateMotion = function() {
     };
     
+    // Delete retreat. I have my own
+    sa.retreat = function() {
+    };
+
     sa.updateShadow = function() {
         this._shadowSprite.visible = !! this._actor;
         this._shadowSprite.y = -2 + this.jumpHeight();
@@ -1773,6 +2036,11 @@ TBSE.init = function() {
             this.setFrame(0, 0, cw, ch);
         }
     };
+
+    // Overwrite set home
+    sa.setActorHome = function(index) {
+        this.setHome(TBSE._actorPos[index].x, TBSE._actorPos[index].y);
+    };
     //#endregion
     //============================================================================================= 
 
@@ -1787,6 +2055,25 @@ TBSE.init = function() {
         TBSE.spriteEnemy.setBattler.call(this, battler);
         if (battler !== undefined){
             TBSE._enemySprites[battler.index()] = this;
+        }
+    };
+
+    // Lol I don't care about boss collapse effect
+    TBSE.spriteEnemy.updateFrame = se.updateFrame
+    se.updateFrame = function() {
+        if (this._battler && this._battler.dataBattler()._isAnimated){
+            Sprite_Battler.prototype.updateFrame.call(this); // Idk why I need this to be honest
+            const bitmap = this.bitmap;
+            if (bitmap) {
+                const animCell = this._battler.sequencer()._animCell;
+                const cw = bitmap.width / TBSE._maxCol;
+                const ch = bitmap.height / TBSE._maxRow;
+                const cy = Math.floor(animCell / TBSE._maxCol) * ch
+                const cx = (animCell % TBSE._maxCol) * cw
+                this.setFrame(cx, cy, cw, ch);
+            }
+        }else{
+            TBSE.spriteEnemy.updateFrame.call(this)
         }
     };
     //#endregion
@@ -1814,6 +2101,9 @@ TBSE.init = function() {
 
     // I don't agree with automatic mirror
     sset.animationShouldMirror = function(target) {
+        if(!target || !target.sequencer){
+            return false
+        }
         let mirror = false;
         switch(TBSE._autoMirror){
             case "Mirror for Actors":
@@ -1829,6 +2119,33 @@ TBSE.init = function() {
     };
     //#endregion
     //============================================================================================= 
+    // Counter Handler
+
+    TBSE.Counter = {} // CounterHandler
+    TBSE.Counter.register = function(subject, targets, item) {
+        this._subject = subject
+        this._targets = targets
+        this._item = item
+    }
+
+    TBSE.Counter.clear = function(){
+        this._subject = undefined
+        this._targets = undefined
+        this._item = undefined
+    }
+
+    TBSE.Counter.getSubject = function(){
+        const counterBattler = this._targets.shift()
+        if(counterBattler){
+            //if (true){
+            if (Math.random() < this._subject.sequencer()._action.itemCnt(counterBattler)){
+                counterBattler.sequencer().actionPrepare([this._subject], counterBattler.counterSkill())
+            }else{
+                return undefined
+            }
+        }
+        return counterBattler
+    }
 
     //============================================================================================= 
     //#region Window_BattleLog (for sequence) 
@@ -1842,7 +2159,7 @@ TBSE.init = function() {
         this.displayAction(subject, item);
         // <Intercept reaction here later>
         this.push("tbse_actionMain", subject, targets, item);
-        // <Counter reaction here later>
+        this.push("tbse_actionCounter", subject, targets, item)
         this.push("tbse_actionEnd", subject, item);
     }
 
@@ -1855,6 +2172,12 @@ TBSE.init = function() {
         subject.sequencer().actionPrepare(targets, item)
         subject.sequencer().performActionSequence();
         this.setWaitMode("Sequence");
+    }
+
+    // Check counterattack
+    wb.tbse_actionCounter = function(subject, targets, item){
+        TBSE.Counter.register(subject, targets, item)
+        this.setWaitMode("Counter")
     }
 
     // Conclusion
@@ -1879,10 +2202,39 @@ TBSE.init = function() {
         if (this._waitMode === "Sequence"){
             return TBSE.isSequenceBusy();
         }
+        if(this._waitMode === "Counter"){
+            if (TBSE.isSequenceBusy()){
+                return true
+            }else{
+                const counterSubject = TBSE.Counter.getSubject()
+                if(counterSubject){
+                    this.clear()
+                    this.addText(TextManager.counterAttack.format(counterSubject.name()))
+                    counterSubject.sequencer().performActionSequence()
+                    return true
+                }
+                TBSE.Counter.clear()
+            }
+        }
         return TBSE.wblog.updateWait.call(this);
     }
     //#endregion
     //=============================================================================================
+
+    //============================================================================================= 
+    // BattleManager
+    //---------------------------------------------------------------------------------------------
+
+    TBSE.bm = {}
+
+    TBSE.bm.processEscape = BattleManager.processEscape
+    BattleManager.processEscape = function() {
+        const success = TBSE.bm.processEscape.call(this)
+        for(const m of $gameParty.members()){
+            m.sequencer().motionEscape(success)
+        }
+        return success;
+    };
 
     //============================================================================================= 
     // Scene Update
@@ -1892,6 +2244,12 @@ TBSE.init = function() {
         TBSE.scene_battle_update.call(this);
         $gameParty.updateSequencer();
         $gameTroop.updateSequencer();
+    };
+
+    TBSE.scene_battle_terminate = Scene_Battle.prototype.terminate
+    Scene_Battle.prototype.terminate = function() {
+        TBSE.scene_battle_terminate.call(this)
+        TBSE.clearSpriteReference()
     };
 
     Game_Unit.prototype.updateSequencer = function(){
