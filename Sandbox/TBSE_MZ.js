@@ -1,6 +1,6 @@
 /*:
 @target MZ
-@plugindesc v0.1.211227 - Theo's Battle Sequence Engine MZ.
+@plugindesc v0.1.211228 - Theo's Battle Sequence Engine MZ.
 @help
 TBSE is spritesheet-based animation sequence plugin aiming for a free-frame 
 pick spritesheet animation sequencer. You are encouraged to use any kind 
@@ -553,7 +553,7 @@ If roll success/fail, it will affect all the next action effect until you reset 
 const TBSE = {}
 TBSE.init = function() {
     this._pluginName = document.currentScript.src.match(/.+\/(.+)\.js/)[1]
-    this._version = '0.1.211227'  // <Major>.<Minor>.<YYMMDD>
+    this._version = '0.1.211228'  // <Major>.<Minor>.<YYMMDD>
 
     this._addons = []           // Store addons name
     this._actorSprites = {}     // Store actor sprite reference
@@ -606,7 +606,9 @@ TBSE.init = function() {
     this._tagMotion     = /<tbse[\s_]+motion\s*:\s*(.+)\s*>/i   // Specify motion to use for skills and states
     this._regexTag      = /<tbse[\s_]+(.+)\s*:\s*(.+)\s*>/i     // To customzize each motion for actors and enemies
     this._tagAnim       = /<animated\s*:\s*(.+)\s*>/i           // Animated flag for enemies
-    this._tagFlip       = /<flip>/i
+    this._tagFlip       = /<flip>/i                             // Default flip
+    this._tagCounter    = /<counter skill\s*:\s*(.+)\s*>/i      // Counter Skill
+    this._tagStateAnim  = /<animation\s*:\s*(\d+)\s*>/i         // Animation ID for state
     
     this.dbLoaded = DataManager.isDatabaseLoaded;
     DataManager.isDatabaseLoaded = function(){
@@ -800,6 +802,29 @@ TBSE.init = function() {
     // For ever-growing valid list (in case of addon)
     this.validCommandList = function(li) {
         return li.code === 230 || (li.code === 357 && li.parameters[0] === TBSE._pluginName && li.parameters[1] === "pose")
+    }
+
+    // Gets overlay looped state animation id
+    this.stateAnim = function(db){
+        if(db._stateAnim === undefined){
+            db._stateAnim = 0
+            const match = db.note.match(TBSE._tagStateAnim)
+            if(match){
+                db._stateAnim = Number(match[1])
+            }
+        }
+        return db._stateAnim
+    }
+
+    // Because === doesn't work. Like, seriously?
+    this.arrayEqual = function(a1, a2){
+        if(a1.length !== a2.length){
+            return false
+        }
+        while (i--) {
+            if (a1[i] !== a2[i]) return false;
+        }
+        return true;
     }
     //#endregion
     //=============================================================================================
@@ -1789,12 +1814,36 @@ TBSE.init = function() {
         this._collapsed = true
     };
 
-    // Will be changed later
     bb.counterSkill = function(){
-        return $dataSkills[1]
+        return $dataSkills[this.counterSkillId()]
     }
     
+    bb.counterSkillId = function(){
+        const db = this.dataBattler()
+        if(db._counterSkillId === undefined){
+            db._counterSkillId = this.attackSkillId()
+            const match = db.note.match(TBSE._tagCounter)
+            if(match){
+                const id = Number(match[1])
+                if(isNaN(id)){
+                    const skill = $dataSkills.find(skill => {return skill && skill.name.toLowerCase().trim() === id})
+                    if(skill){
+                        db._counterSkillId = skill.id
+                    }else{
+                        console.log(`WARNING: Skill name "${id}" is not found. Set counter skill to normal attack id`)
+                    }
+                }else{
+                    db._counterSkillId = id
+                }
+            }
+        }
+        return db._counterSkillId
+    }
 
+    // Might turn into ._states if too many plugins used states() function and causes a lot of complication
+    bb.stateAnim = function(){
+        this.states().filter(s => TBSE.stateAnim(s) > 0).map(a => TBSE.stateAnim(s))
+    }
     //#endregion
     //=============================================================================================
 
@@ -2258,4 +2307,4 @@ TBSE.init = function() {
         }
     }
 }
-TBSE.init(TBSE)
+TBSE.init()
