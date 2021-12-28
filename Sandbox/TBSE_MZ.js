@@ -556,8 +556,7 @@ TBSE.init = function() {
     this._version = '0.1.211228'  // <Major>.<Minor>.<YYMMDD>
 
     this._addons = []           // Store addons name
-    this._actorSprites = {}     // Store actor sprite reference
-    this._enemySprites = {}     // Store enemy sprite reference
+    this._battlerSprites = {}   // Store battler sprites
     this._affectedBattlers = [] // Store all affected battlers
     this._actorPos = []         // Store actor initial home position
 
@@ -762,8 +761,7 @@ TBSE.init = function() {
 
     // Clears sprite reference
     this.clearSpriteReference = function(){
-        TBSE._actorSprites = {}
-        TBSE._enemySprites = {}
+        TBSE._battlerSprites
     }
 
     // Get common event based on the name
@@ -816,11 +814,12 @@ TBSE.init = function() {
         return db._stateAnim
     }
 
-    // Because === doesn't work. Like, seriously?
+    // Because === doesn't work. Like, javascript seriously?
     this.arrayEqual = function(a1, a2){
         if(a1.length !== a2.length){
             return false
         }
+        let i = a1.length
         while (i--) {
             if (a1[i] !== a2[i]) return false;
         }
@@ -1554,8 +1553,8 @@ TBSE.init = function() {
                 const commandName = params[1]
                 if (TBSE.COMMANDS[commandName] !== undefined){
                     const args = params[3];
-                    args.interpreter = this;
-                    TBSE.COMMANDS[commandName].call(this.battler(),(params[3]));
+                    args.interpreter = this; // idk why you need to reference the interpreter tho, but just in case
+                    TBSE.COMMANDS[commandName].call(this.battler(),args);
                     return true
                 }else{
                     console.log("WARNING: Command name " + commandName + " is undefined. If this is a command addon, make sure that it is not a typo. Skipping instruction")
@@ -1743,12 +1742,16 @@ TBSE.init = function() {
         }
     }
 
-    bb.sprite = function(){
+    bb.battlerKey = function(){
         if (this.isActor()){
-            return TBSE._actorSprites[this._actorId];
+            return `a${this._actorId}`
         }else{
-            return TBSE._enemySprites[this.index()];
+            return `e${this.index()}`
         }
+    }
+
+    bb.sprite = function(){
+        TBSE._battlerSprites[this.battlerKey()]
     }
 
     bb.clearActionSequence = function(){
@@ -1842,7 +1845,7 @@ TBSE.init = function() {
 
     // Might turn into ._states if too many plugins used states() function and causes a lot of complication
     bb.stateAnim = function(){
-        this.states().filter(s => TBSE.stateAnim(s) > 0).map(a => TBSE.stateAnim(s))
+        return this.states().filter(s => TBSE.stateAnim(s) > 0).map(s => TBSE.stateAnim(s))
     }
     //#endregion
     //=============================================================================================
@@ -1866,9 +1869,9 @@ TBSE.init = function() {
         }
     }
 
-    TBSE.actor.battleName = ga.battlerName
+    TBSE.actor.battlerName = ga.battlerName
     ga.battlerName = function() {
-        return TBSE.actor.battleName.call(this) + this.svsuffix();
+        return TBSE.actor.battlerName.call(this) + this.svsuffix();
     };
 
     TBSE.actor.onBattleStart = ga.onBattleStart
@@ -1884,13 +1887,6 @@ TBSE.init = function() {
             return seq._visible
         }
         return false
-    };
-
-    // Overwrite the escape motion
-    ga.performEscape = function() {
-        if (this.canMove()) {
-            this.requestMotion("escape");
-        }
     };
 
     // Overwrite the victory motion
@@ -2054,7 +2050,7 @@ TBSE.init = function() {
     sa.setBattler = function(battler) {
         TBSE.spriteActor.setBattler.call(this, battler);
         if (battler !== undefined){
-            TBSE._actorSprites[battler._actorId] = this;
+            TBSE._battlerSprites[battler.battlerKey()] = this;
         }
     };
     
@@ -2103,7 +2099,7 @@ TBSE.init = function() {
     se.setBattler = function(battler) {
         TBSE.spriteEnemy.setBattler.call(this, battler);
         if (battler !== undefined){
-            TBSE._enemySprites[battler.index()] = this;
+            TBSE._battlerSprites[battler.battlerKey()] = this;
         }
     };
 
@@ -2166,21 +2162,81 @@ TBSE.init = function() {
         }
         return mirror;
     };
+
+    TBSE.AnimLoopTracker = {}
+
+    // Might be changed into flag based checker if it lags a lot
+    TBSE.sprset.processAnimReq = sset.processAnimationRequests
+    sset.processAnimationRequests = function(){
+        TBSE.sprset.processAnimReq.call(this)
+        for(const m of [...$gameParty.members(),...$gameTroop.members()]){
+            const key = m.battlerKey()
+            const stateAnim = m.stateAnim()
+            TBSE.AnimLoopTracker[key] ||= []
+            if(!TBSE.arrayEqual(TBSE.AnimLoopTracker[key], stateAnim)){
+                TBSE.AnimLoopTracker[key] = stateAnim
+                this.refreshLoopedAnimation(key, stateAnim, m)
+            }
+        }
+    }
+
+    sset.refreshLoopedAnimation = function(key, stateAnim, target){
+        this._animLoop ||= {}
+        this._animLoop[key] ||= []
+        for(const anime of this._animLoop[key]){
+            this._animLoop[key].remove(anime);
+            this._effectsContainer.removeChild(anime);
+            anime.destroy()
+        }
+
+        for(const animeId of stateAnim){
+            const animation = $dataAnimations[animeId]
+            const mv = this.isMVAnimation(animation)
+            const sprite = new (mv ? TBSE.AnimationLoop_MV : TBSE.AnimationLoop)()
+            const targetSprite = this.makeTargetSprites([target]);
+            sprite.setup(targetSprite, animation, false, 0, 0);
+            this._effectsContainer.addChild(sprite);
+            this._animLoop[key].push(sprite);
+        }
+    }
+    //#endregion
+
+    //============================================================================================= 
+    //#region Animation handler for looping
+    //---------------------------------------------------------------------------------------------
+    TBSE.AnimationLoop_MV = class extends Sprite_AnimationMV{
+        // Restart on end
+        onEnd(){
+            this.setupDuration()
+        }    
+    }
+
+    TBSE.AnimationLoop = class extends Sprite_Animation{
+        // Restart on end
+        checkEnd(){
+            if (
+                this._frameIndex > this._maxTimingFrames &&
+                this._flashDuration === 0 &&
+                !(this._handle && this._handle.exists)
+            ) {
+                this._frameIndex = 0
+                this._handle = Graphics.effekseer.play(this._effect);
+            }
+        }
+    }
     //#endregion
     //============================================================================================= 
-    // Counter Handler
+    //#region Counter Handler
 
     TBSE.Counter = {} // CounterHandler
-    TBSE.Counter.register = function(subject, targets, item) {
+    TBSE.Counter.register = function(subject, targets) {
         this._subject = subject
         this._targets = targets
-        this._item = item
     }
 
     TBSE.Counter.clear = function(){
         this._subject = undefined
         this._targets = undefined
-        this._item = undefined
     }
 
     TBSE.Counter.getSubject = function(){
@@ -2195,7 +2251,7 @@ TBSE.init = function() {
         }
         return counterBattler
     }
-
+    //#endregion
     //============================================================================================= 
     //#region Window_BattleLog (for sequence) 
     //---------------------------------------------------------------------------------------------
@@ -2242,15 +2298,13 @@ TBSE.init = function() {
         this._waitCount = 5;
     }
 
-    wb.waitFor = function(frame) {
-        this._waitCount = frame;
-    };
-
     TBSE.wblog.updateWait = wb.updateWaitMode
     wb.updateWaitMode = function(){
+        // Update for main sequence
         if (this._waitMode === "Sequence"){
             return TBSE.isSequenceBusy();
         }
+        // Update when counterattack is in action
         if(this._waitMode === "Counter"){
             if (TBSE.isSequenceBusy()){
                 return true
