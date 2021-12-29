@@ -1,6 +1,6 @@
 /*:
 @target MZ
-@plugindesc v0.1.211228 - Theo's Battle Sequence Engine MZ.
+@plugindesc v0.1.xx - Theo's Battle Sequence Engine MZ.
 @help
 TBSE is spritesheet-based animation sequence plugin aiming for a free-frame 
 pick spritesheet animation sequencer. You are encouraged to use any kind 
@@ -195,9 +195,18 @@ the delay of each frame and all the timing on your own.
 @text On
 @type select
 @option Self
-@option Targets
-@default Targets
-@desc Play animation on the target
+@option Each Target
+@option Center of all targets
+@default Each Target
+@desc Where to play the animation (Effekseer display type might override this)
+
+@arg repos
+@text Reposition
+@type select
+@option Fixed
+@option Follow Sprite
+@default Fixed
+@desc Determine if the animation should follow the battler or fixed in place
 
 @arg mirror
 @type boolean
@@ -553,7 +562,7 @@ If roll success/fail, it will affect all the next action effect until you reset 
 const TBSE = {}
 TBSE.init = function() {
     this._pluginName = document.currentScript.src.match(/.+\/(.+)\.js/)[1]
-    this._version = '0.1.211228'  // <Major>.<Minor>.<YYMMDD>
+    this._version = '0.1.211229'  // <Major>.<Minor>.<YYMMDD>
 
     this._addons = []           // Store addons name
     this._battlerSprites = {}   // Store battler sprites
@@ -951,12 +960,22 @@ TBSE.init = function() {
                 animId = (this.isActor() ? this.attackAnimationId1() : 0)
             }
         }
+        let arr = []
         switch(args.target){
             case "Self": 
-                $gameTemp.requestAnimation([this], animId, mirror);
+                arr = [this]
+                arr.fixed = args.repos === "Fixed"
+                $gameTemp.requestAnimation(arr, animId, mirror);
                 break;
-            case "Targets":
-                $gameTemp.requestAnimation(seq._targetArray, animId, mirror);
+            case "Each Target":
+                arr = [...seq._targetArray]
+                arr.fixed = args.repos === "Fixed"
+                $gameTemp.requestAnimation(arr, animId, mirror);
+                break;
+            case "Center of all targets":
+                arr = [...seq._targetArray]
+                arr.center = true
+                $gameTemp.requestAnimation(arr, animId, mirror);
                 break;
         }
         if(isWaiting){
@@ -1751,7 +1770,7 @@ TBSE.init = function() {
     }
 
     bb.sprite = function(){
-        TBSE._battlerSprites[this.battlerKey()]
+        return TBSE._battlerSprites[this.battlerKey()]
     }
 
     bb.clearActionSequence = function(){
@@ -2002,8 +2021,8 @@ TBSE.init = function() {
     sb.updatePosition = function() {
         if (this._tbseMoveDuration > 0) {
             const time = this._maxDuration - this._tbseMoveDuration
-            this._displayX = this._usedFunc(this._oriX, this._targX, time, this._maxDuration)
-            this._displayY = this._usedFunc(this._oriY, this._targY, time, this._maxDuration)
+            this._displayX = this._usedFuncX(this._oriX, this._targX, time, this._maxDuration)
+            this._displayY = this._usedFuncY(this._oriY, this._targY, time, this._maxDuration)
             this._tbseMoveDuration -= 1;
             if (this._tbseMoveDuration === 0){
                 this._displayX = this._targX;
@@ -2017,7 +2036,7 @@ TBSE.init = function() {
     };
 
     // It is possible to use a different function, for example, if you want to use easing movement
-    sb.goto = function(x, y, duration, jump = 0, funcName = "linearFunc"){
+    sb.goto = function(x, y, duration, jump = 0, funcNameX = "linearFunc", funcNameY = "linearFunc"){
         this._maxDuration = duration;
         this._jumpPower = jump;
         this._targX = x;
@@ -2025,7 +2044,8 @@ TBSE.init = function() {
         this._oriX = this._displayX;
         this._oriY = this._displayY;
         this._tbseMoveDuration = duration;
-        this._usedFunc = TBSE[funcName];
+        this._usedFuncX = TBSE[funcNameX];
+        this._usedFuncY = TBSE[funcNameY];
     }
 
     sb.jumpHeight = function(){
@@ -2130,16 +2150,23 @@ TBSE.init = function() {
     TBSE.sprset = {}
     const sset = Spriteset_Battle.prototype
 
+    TBSE.sprset.init = sset.initialize
+    sset.initialize = function(){
+        TBSE.sprset.init.call(this)
+        this._fixedAnimeHandler = []
+    }
+
     TBSE.sprset.isBusy = sset.isBusy
     sset.isBusy = function() {
         return TBSE.sprset.isBusy.call(this) || TBSE.isSequenceBusy();
     };
 
-    // Delays are silly, why would they do this smh ...
+    // Delete delay
     sset.animationBaseDelay = function() {
         return 0;
     };
 
+    // Delete delay
     sset.animationNextDelay = function() {
         return 0;
     };
@@ -2163,6 +2190,76 @@ TBSE.init = function() {
         return mirror;
     };
 
+    // Overwrite create animation. I see no other solution
+    sset.createAnimation = function(request){
+        const animation = $dataAnimations[request.animationId];
+        const targets = request.targets;
+        const mirror = request.mirror;
+        let delay = this.animationBaseDelay();
+        const nextDelay = this.animationNextDelay();
+        if (this.isAnimationForEach(animation) && !targets.center) { // Lemme decide if it is center or not, dammit!
+            for (const target of targets) {
+                const arr = [target]
+                arr.fixed = targets.fixed                
+                this.createAnimationSprite(arr, animation, mirror, delay);
+                delay += nextDelay;
+            }
+        } else {
+            this.createAnimationSprite(targets, animation, mirror, delay);
+        }
+    }
+
+    TBSE.sprset.makeTargetSprites = sset.makeTargetSprites
+    sset.makeTargetSprites = function(targets) {
+        const targetSprites = TBSE.sprset.makeTargetSprites.call(this, targets);
+        //console.log(targets)
+        if(targets.center){
+            const centerSpr = this.makeCenterTarget(targetSprites)
+            return [centerSpr]
+        }
+        if(targets.fixed){
+            return this.makeFixedTarget(targetSprites)   
+        }
+        return targetSprites;
+    };
+
+    // Center mass
+    sset.makeCenterTarget = function(targets){
+        const spr = new Sprite()
+        spr._trackThis = true 
+        spr.x = targets.reduce((total, trg)=>{ return trg.x + total}, 0) / targets.length
+        spr.y = targets.reduce((total, trg)=>{ return trg.y + total}, 0) / targets.length
+        this._fixedAnimeHandler.push(spr)
+        this._battleField.addChild(spr)
+        const arrRef = [this._fixedAnimeHandler, this._battleField]
+        spr.endAnimation = function(){
+            arrRef[0].remove(spr)
+            arrRef[1].removeChild(spr)
+            spr.destroy()
+        }
+        return spr
+    }
+
+    // Animation do not follow
+    sset.makeFixedTarget = function(targets){
+        return targets.map(t => {
+            const spr = new Sprite()
+            spr._trackThis = true
+            spr.x = t.x
+            spr.y = t.y
+            spr.setFrame(0, 0, t.width, t.height)
+            this._fixedAnimeHandler.push(spr)
+            this._battleField.addChild(spr)
+            const arrRef = [this._fixedAnimeHandler, this._battleField]
+            spr.endAnimation = function(){
+                arrRef[0].remove(spr)
+                arrRef[1].removeChild(spr)
+                spr.destroy()
+            }
+            return spr
+        })
+    }
+
     TBSE.AnimLoopTracker = {}
 
     // Might be changed into flag based checker if it lags a lot
@@ -2182,8 +2279,17 @@ TBSE.init = function() {
 
     sset.refreshLoopedAnimation = function(key, stateAnim, target){
         this._animLoop ||= {}
+        this._animLoop2 ||= {} // For effekseer loop
         this._animLoop[key] ||= []
+        this._animLoop2[key] ||= [] // For effekseer loop
         for(const anime of this._animLoop[key]){
+            this._animLoop[key].remove(anime);
+            this._effectsContainer.removeChild(anime);
+            anime.destroy()
+        }
+
+        // For effekseer loop (this will be improved later)
+        for(const anime of this._animLoop2[key]){
             this._animLoop[key].remove(anime);
             this._effectsContainer.removeChild(anime);
             anime.destroy()
@@ -2194,13 +2300,34 @@ TBSE.init = function() {
             const mv = this.isMVAnimation(animation)
             const sprite = new (mv ? TBSE.AnimationLoop_MV : TBSE.AnimationLoop)()
             const targetSprite = this.makeTargetSprites([target]);
-            sprite.setup(targetSprite, animation, false, 0, 0);
+            if (mv){
+                sprite.setup(targetSprite, animation, false, 0, 0);
+            }else{
+                const delay = TBSE.getEffekseerLoopDelay(animation)
+                // This will be improved later
+                // For example, instead of delay, it will be length. If length >= <number> play a new duplicated animation. Do not restart.
+                if(delay > 0){
+                    const sprite2 = new TBSE.AnimationLoop()
+                    sprite2.setup(targetSprite, animation, false, delay, 0);
+                    this._effectsContainer.addChild(sprite2);
+                    this._animLoop2[key].push(sprite2);
+                }
+                sprite.setup(targetSprite, animation, false, 0, 0);
+            }
             this._effectsContainer.addChild(sprite);
             this._animLoop[key].push(sprite);
         }
     }
-    //#endregion
 
+    this.getEffekseerLoopDelay = function(db){
+        db._nextDelay = 0
+        const match = db.name.match(/<delay\s*:\s*(\d+)\s*>/i)
+        if (match){
+            db._nextDelay = Number(match[1])
+        }
+        return db._nextDelay
+    }
+    //#endregion
     //============================================================================================= 
     //#region Animation handler for looping
     //---------------------------------------------------------------------------------------------
@@ -2221,6 +2348,28 @@ TBSE.init = function() {
             ) {
                 this._frameIndex = 0
                 this._handle = Graphics.effekseer.play(this._effect);
+            }
+        }
+    }
+
+    // These are kinda convoluted, blame the base code design
+    TBSE.Animation = {}
+    TBSE.Animation.setup = Sprite_Animation.prototype.setup
+    Sprite_Animation.prototype.setup = function(){
+        TBSE.Animation.setup.call(this, ...arguments)
+        for(const t of this._targets){
+            if(t && t._trackThis){
+                this.targetObjects.push(t)
+            }
+        }
+    }
+
+    TBSE.Animation.setupMV = Sprite_AnimationMV.prototype.setup
+    Sprite_AnimationMV.prototype.setup = function(){
+        TBSE.Animation.setupMV.call(this, ...arguments)
+        for(const t of this._targets){
+            if(t && t._trackThis){
+                this.targetObjects.push(t)
             }
         }
     }
