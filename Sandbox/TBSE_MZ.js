@@ -13,6 +13,14 @@ the delay of each frame and all the timing on your own.
 
 @author TheoAllen
 
+@command divstart
+@text <empty command>
+@desc Please select command you want to use
+
+@command div0
+@text ---------< Sprite Animation >------------
+@desc Please select command you want to use
+
 //========================================================================
 // * Command - Set Pose
 //========================================================================
@@ -170,6 +178,24 @@ the delay of each frame and all the timing on your own.
 @desc Position relative to ...
 
 //========================================================================
+// * Command - Force Action
+//========================================================================
+
+@command targetAction
+@text Force Action
+@desc Force the targets to do an action sequence by calling a common event. 
+
+@arg action
+@type common_event
+@default 1
+@text Action
+@desc Select the common event for the target.
+
+@command div1
+@text ---------< Game Mechanics >-------------
+@desc
+
+//========================================================================
 // * Command - Action Effect
 //========================================================================
 
@@ -178,43 +204,116 @@ the delay of each frame and all the timing on your own.
 @desc Invoke item/skill effect to the target battler
 
 //========================================================================
-// * Command - Play Animation
+// * Command - Projectile
 //========================================================================
 
-@command anim
-@text Play Animation
-@desc Show animation on the battlers
+@command projectile
+@text Throw Projectile
+@desc Throw a projectile to the targets. Action effect is applied as soon as it hits the target or as configured
 
-@arg id
-@text Animation ID
-@type animation
-@desc Select the animation file (Selecting 0 will use the skill animation)
+@arg img
+@text Projectile Image
+@type struct<prjimg>
+@desc Display of the projectile. (Icon, animation, custom image)
+@default {"icon":"0","file":"","animation":"0","spin":"0"}
+
+@arg duration
+@type number
+@text Duration
+@default 10
+@desc Travel duration
+
+@arg jump
+@type number
+@text Jump / Arch power
 @default 0
+@desc Jump / Arch power
 
-@arg target
-@text On
+@arg type
 @type select
-@option Self
-@option Each Target
-@option Center of all targets
-@default Each Target
-@desc Where to play the animation (Effekseer display type might override this)
+@text Movement Type
+@option Normal
+@option Boomerang
+@default Normal
+@desc Select movement type. Boomerang means returning to the target afterward with negative arch value
 
-@arg repos
-@text Reposition
+@arg prjadv
+@text ---------------
+@type text
+@default ---------------
+
+@arg delay
+@type number
+@text Launch Delay
+@default 0
+@desc Wait time before launching the projectile
+
+@arg effect
 @type select
-@option Fixed
-@option Follow Sprite
-@default Fixed
-@desc Determine if the animation should follow the battler or fixed in place
+@text Invoke effect at
+@option Reaching the target
+@option The beginning
+@option Do not invoke the effect
+@default Reaching the target
+@desc Invoke effect method you can select.
 
-@arg mirror
-@type boolean
-@text Mirror
-@on true
-@off false
-@default false
-@desc Set animation mirror here
+@arg startpoint
+@text Start Point
+@type struct<projectilepoints>
+@desc Starting point of the projectile
+@default {"X":"0","Y":"0","relativeto":"Self"}
+
+@arg endpoint
+@text End Point
+@type struct<projectilepoints>
+@desc End point of the projectile
+@default {"X":"0","Y":"0","relativeto":"Each Target"}
+
+@arg aftimg
+@type struct<aftimg>
+@text Afterimage Effect
+@default {"Rate":"0","opacityEase":"20"}
+@desc Afterimage effect for the projectile
+
+@arg animsetup
+@type struct<animationsetup>
+@text Animation Setup
+@default {"start":"0","ending":"-1","trail":"0"}
+@desc Setup the start/ending animation and trailing animation
+
+@arg movefunc
+@type struct<movefunction>
+@text Movement Function
+@default {"moveX":"Linear","moveY":"Linear"}
+@desc Movement function
+
+//========================================================================
+// * Command - Force result
+//========================================================================
+
+@command forceResult
+@text Force Result
+@desc Force the result of the skill/item
+
+@arg opt
+@text Option
+@type select
+@option Default
+@option Hit
+@option Evade
+@option Critical
+@default Default
+@desc Affect all the next action effect regardless of hit/eva/cri rate until you reset to the default.
+
+@arg value
+@text Result
+@type select
+@option Roll
+@option Success
+@option Fail
+@default Roll
+@desc Determine the action result whether it is success or not or roll based on RNG.
+If roll success/fail, it will affect all the next action effect until you reset to the default.
 
 //========================================================================
 // * Command - Alter Effect (May be changed for more versatility)
@@ -322,19 +421,56 @@ the delay of each frame and all the timing on your own.
 @text Operand
 @desc Add or Remove the state?
 
+@command div2
+@text ---------< Visuals Effects >-----------
+@desc
+
 //========================================================================
-// * Command - Force Action
+// * Command - Play Animation
 //========================================================================
 
-@command targetAction
-@text Force Action
-@desc Force the targets to do an action sequence by calling a common event. 
+@command anim
+@text Play Animation
+@desc Show animation on the battlers
 
-@arg action
-@type common_event
-@default 1
-@text Action
-@desc Select the common event for the target.
+@arg id
+@text Animation ID
+@type animation
+@desc Select the animation file (Selecting 0 will use the skill animation)
+@default 0
+
+@arg target
+@text On
+@type select
+@option Self
+@option Each Target
+@option Center of all targets
+@default Each Target
+@desc Where to play the animation (Effekseer display type might override this)
+
+@arg repos
+@text Reposition
+@type select
+@option Fixed
+@option Follow Sprite
+@default Fixed
+@desc Determine if the animation should follow the battler or fixed in place
+
+@arg layer
+@text Layer
+@type select
+@option Back
+@option Front
+@default Front
+@desc Play the animation on the back/front of the sprite
+
+@arg mirror
+@type boolean
+@text Mirror
+@on true
+@off false
+@default false
+@desc Set animation mirror here
 
 //========================================================================
 // * Command - Visible toggle
@@ -346,7 +482,7 @@ the delay of each frame and all the timing on your own.
 
 @arg toggle
 @type boolean
-@text toggle
+@text Set State
 @on Visible
 @off Invisible
 @default true
@@ -362,13 +498,79 @@ the delay of each frame and all the timing on your own.
 
 @arg toggle
 @type select
-@text toggle
+@text Set State
 @option Flips
 @option Unflips
 @option Toggle
 @option Reset
 @default Toggle
 @desc Set toggles here
+
+//========================================================================
+// * Command - Afterimage ON
+//========================================================================
+
+@command aftOn
+@text Afterimage ON
+@desc Toggle afterimage effect ON
+
+@arg rate
+@text Rate
+@type number
+@default 1
+@desc Smaller number = more often the afterimage effect is displayed
+
+@arg opacityEase
+@text Ease
+@type number
+@default 20
+@desc Bigger number = faster fading 
+
+//========================================================================
+// * Command - Afterimage OFF
+//========================================================================
+
+@command aftOff
+@text Afterimage OFF
+@desc Toggle afterimage effect OFF
+
+//========================================================================
+// * Command - Focus Effect ON
+//========================================================================
+
+@command focusOn
+@text Focus Effect ON
+@desc Enable focus effect. Hide all unaffected battlers.
+
+@arg dim
+@type number
+@text Dimness
+@min 0
+@max 255
+@default 128
+@desc Set the dimness from 0 to 255
+
+@arg duration
+@type number
+@text Fading out duration
+@min 1
+@default 35
+@desc Duration to full dim
+
+//========================================================================
+// * Command - Focus Effect OFF
+//========================================================================
+
+@command focusOff
+@text Focus Effect OFF
+@desc Reset the focus effect to normal
+
+@arg duration
+@type number
+@text Fading in duration
+@min 1
+@default 35
+@desc Duration to full dim
 
 //========================================================================
 // * Command - Check collapse, check if the target dies
@@ -386,34 +588,6 @@ the delay of each frame and all the timing on your own.
 @command collapse
 @text Perform Collapse
 @desc Perform collapse effect on the subject. Used for collapse motion
-
-//========================================================================
-// * Command - Force result
-//========================================================================
-
-@command forceResult
-@text Force Result
-@desc Force the result of the skill/item
-
-@arg opt
-@text Option
-@type select
-@option Default
-@option Hit
-@option Evade
-@option Critical
-@default Default
-@desc Affect all the next action effect regardless of hit/eva/cri rate until you reset to the default.
-
-@arg value
-@text Result
-@type select
-@option Roll
-@option Success
-@option Fail
-@default Roll
-@desc Determine the action result whether it is success or not or roll based on RNG.
-If roll success/fail, it will affect all the next action effect until you reset to the default.
 
 //========================================================================
 // * Plugin Parameters below
@@ -541,7 +715,6 @@ If roll success/fail, it will affect all the next action effect until you reset 
 @type common_event
 @default 11
 @desc A default motion that is played when using item
-
 */
 
 /*~struct~actorpos:
@@ -559,14 +732,115 @@ If roll success/fail, it will affect all the next action effect until you reset 
 @desc Y position of the n-th actor
 @default 0
 */
+
+/*~struct~projectilepoints:
+@param X
+@text X-Axis
+@type text
+@text X
+@desc X-axis. You can use a JS code here
+@default 0
+
+@param Y
+@text Y-Axis
+@type text
+@text Y
+@desc Y-axis. You can use a JS code here
+@default 0
+
+@param relativeto
+@type select
+@text Relative to
+@option Each Target
+@option Center of all targets
+@option Self
+@default Each target
+*/
+
+/*~struct~prjimg:
+@param icon
+@text Icon Index
+@type number
+@min 0
+@default 0
+@desc Use text input --> right click --> Insert icon index
+
+@param file
+@type file
+@text Image File
+@dir img/system/
+@desc Load from file
+
+@param animation
+@type animation
+@text Animation
+@default 0
+@desc Animation effect that is played in loop
+
+@param spin
+@type number
+@text Spin speed
+@default 0
+@desc Spinning speed of the projectile
+*/
+
+/*~struct~aftimg:
+@param Rate
+@type number
+@text Rate
+@default 0
+@desc Smaller number = more often the afterimage effect is displayed. Set this to 0 to disable
+
+@param opacityEase
+@text Ease
+@type number
+@default 20
+@desc Bigger number = faster fading 
+*/
+
+/*~struct~movefunction:
+@param moveX
+@type select
+@text X Function
+@option Linear
+@option Smoooth
+
+@param moveY
+@type select
+@text Y Function
+@option Linear
+@option Smoooth
+*/
+
+/*~struct~animationsetup:
+@param start
+@type animation
+@text Start Animation
+@default 0
+@desc Animation during the creation of the projectile
+
+@param ending
+@type animation
+@text Ending Animation
+@default -1
+@desc Animation after the projectile reaches the target(s). Use -1 to use default skill/item animation
+
+@param trail
+@type animation
+@text Trail
+@default 0
+@desc Trailing animation that the projectile left on its path
+*/
+
 const TBSE = {}
 TBSE.init = function() {
     this._pluginName = document.currentScript.src.match(/.+\/(.+)\.js/)[1]
-    this._version = '0.1.211229'  // <Major>.<Minor>.<YYMMDD>
+    this._version = '0.1.211231'  // <Major>.<Minor>.<YYMMDD>
 
     this._addons = []           // Store addons name
     this._battlerSprites = {}   // Store battler sprites
     this._affectedBattlers = [] // Store all affected battlers
+    this._sequencer = {}        // Store sequencer
     this._actorPos = []         // Store actor initial home position
 
     //=============================================================================================
@@ -760,7 +1034,9 @@ TBSE.init = function() {
 
     // Smooth movement function
     this.smoothFunc = function(ori, target, time, maxtime) {
-        return target * Math.sqrt(1 - (time=time/maxtime.to_f-1)*time) + ori;
+        const t = time / maxtime
+        const progress = Math.sin((t * Math.PI) / 2)
+        return ori + ((target - ori) * progress);
     }
 
     // Return a random element from an array
@@ -857,6 +1133,8 @@ TBSE.init = function() {
 
     // Move command
     cmd.move = function(args){
+        args.moveFuncX ||= "linearFunc"
+        args.moveFuncY ||= "linearFunc"
         const spr = this.sprite();
         let targX = TBSE.evalNumber.call(this, args.x)
         let targY = TBSE.evalNumber.call(this, args.y)
@@ -879,11 +1157,13 @@ TBSE.init = function() {
                 targY += this.homePos().y;
                 break;
         }
-        spr.goto(targX, targY, args.dur, args.jump)
+        spr.goto(targX, targY, args.dur, args.jump, args.moveFuncX, args.moveFuncY)
     }
 
     // Move command (target)
     cmd.moveTarget = function(args){
+        args.moveFuncX ||= "linearFunc"
+        args.moveFuncY ||= "linearFunc"
         const seq = this.sequencer()
         
         // Individual
@@ -906,7 +1186,7 @@ TBSE.init = function() {
                         targY += t.homePos().y;
                         break;
                 }
-                spr.goto(targX, targY, args.dur, args.jump)
+                spr.goto(targX, targY, args.dur, args.jump, args.moveFuncX, args.moveFuncY)
             }
 
         // Center Mass
@@ -920,13 +1200,16 @@ TBSE.init = function() {
 
             switch(args.to){
                 case "Subject":
-
+                    targX += this.sprite().x
+                    targY += this.sprite().y
                     break;
                 case "Slide":
                     targX += centerX;
                     targY += centerY;
                     break;
             }
+
+            spr.goto(targX, targY, args.dur, args.jump, args.moveFuncX, args.moveFuncY)
         }
     }
 
@@ -965,16 +1248,19 @@ TBSE.init = function() {
             case "Self": 
                 arr = [this]
                 arr.fixed = args.repos === "Fixed"
+                arr.layer = args.layer
                 $gameTemp.requestAnimation(arr, animId, mirror);
                 break;
             case "Each Target":
                 arr = [...seq._targetArray]
                 arr.fixed = args.repos === "Fixed"
+                arr.layer = args.layer
                 $gameTemp.requestAnimation(arr, animId, mirror);
                 break;
             case "Center of all targets":
                 arr = [...seq._targetArray]
                 arr.center = true
+                arr.layer = args.layer
                 $gameTemp.requestAnimation(arr, animId, mirror);
                 break;
         }
@@ -990,10 +1276,13 @@ TBSE.init = function() {
             seq._action.apply(target);
             if (target.shouldPopupDamage()){
                 target.startDamagePopup();
-                if (target.sequencer().canPlayEvadeMotion()){
-                    target.sequencer().motionEvade()
-                }else if (target.sequencer().canPlayDamagedMotion()){
-                    target.sequencer().motionDamaged()
+                const tseq = target.sequencer()
+                if (tseq.canPlayEvadeMotion()){
+                    tseq._targetArray = [this]
+                    tseq.motionEvade()
+                }else if (tseq.canPlayDamagedMotion()){
+                    tseq._targetArray = [this]
+                    tseq.motionDamaged()
                 }
             }
         }
@@ -1273,7 +1562,7 @@ TBSE.init = function() {
     // Force the target to do action sequence
     cmd.targetAction = function(args){
         for(const t of this.sequencer()._targetArray){
-            t.sequencer().actionPrepare([this], null) // I might change the null into an actual skill later
+            t.sequencer().actionPrepare([this], null) 
             t.sequencer().doAction(Number(args.action))
         }
     }
@@ -1285,6 +1574,21 @@ TBSE.init = function() {
     cmd.checkCollapse = function(){
         for(const t of this.sequencer()._targetArray)
             t.checkCollapse()
+    }
+
+    cmd.aftOn = function(args){
+        this.sequencer()._afterimage = {
+            rate: args.rate,
+            opacityEase: args.opacityEase
+        }
+    }
+
+    cmd.aftOff = function(){
+        this.sequencer()._afterimage = null
+    }
+
+    cmd.projectile = function(args){
+        console.log(args)
     }
     //#endregion
     //=============================================================================================
@@ -1301,6 +1605,7 @@ TBSE.init = function() {
             this._action = new TBSE.Action(battler);
             this._interpreter = new TBSE.Sequence_Interpreter(battler, 0);
             this._actionRecord = new TBSE.ActionRecord();
+            this._afterimage = null
             this.clear()
             this.startIdleMotion()
         }
@@ -1316,7 +1621,6 @@ TBSE.init = function() {
             this._flip = TBSE.defaultFlip(this.dataBattler())   // Determine if the battler image is flipped
         }
 
-        // Avoiding circular reference
         battler(){
             if(this._isActor){
                 return $gameActors.actor(this._battlerID)
@@ -1331,8 +1635,8 @@ TBSE.init = function() {
 
         // Prepare for action
         actionPrepare(targets, item){
-            this._targetArray = targets.concat()
-            this._victims = targets.concat()
+            this._targetArray = [...targets]
+            this._victims = [...targets]
             this._oriTargets = targets
             this.setItemUse(item, true)
         }
@@ -1679,6 +1983,7 @@ TBSE.init = function() {
 
     //=============================================================================================
     //#region Action Record
+    // Currently unused. Probably used for battle log or damage counter
     //---------------------------------------------------------------------------------------------
     TBSE.ActionRecord = class{
         constructor(){
@@ -1726,7 +2031,7 @@ TBSE.init = function() {
     TBSE.battler.onBattleStart = bb.onBattleStart
     bb.onBattleStart = function(){
         TBSE.battler.onBattleStart.call(this);
-        this._sequencer = new TBSE.Sequencer(this)
+        TBSE._sequencer[this.battlerKey()] = new TBSE.Sequencer(this)
     }
 
     bb.dataBattler = function(){
@@ -1742,9 +2047,8 @@ TBSE.init = function() {
         return this.sequencer()._suffix
     }
 
-    // Get sequencer object. Might be changed if there's a saving issue or deep copy issue
     bb.sequencer = function(){
-        return this._sequencer;
+        return TBSE._sequencer[this.battlerKey()]
     }
 
     bb.homePos = function() {
@@ -1774,7 +2078,7 @@ TBSE.init = function() {
     }
 
     bb.clearActionSequence = function(){
-        this._sequencer = undefined
+        delete TBSE._sequencer[this.battlerKey()]
     }
 
     // Check if the battler is busy doing action
@@ -2060,6 +2364,75 @@ TBSE.init = function() {
     //#endregion
     //============================================================================================= 
 
+    //=============================================================================================
+    //#region Afterimage
+    //---------------------------------------------------------------------------------------------
+    TBSE.Afterimages = class {
+        constructor(ref){
+            this.imagelist = []
+            this.ref = ref
+            this.counter = 0
+        }
+    
+        update(){
+            this.generateAfterimage()
+            this.counter++
+            for(const img of this.imagelist){
+                if(img.opacity <= 0){
+                    img.destroy()
+                    this.imagelist.remove(img)
+                }
+            }
+        }
+    
+        generateAfterimage(){
+            const battler = this.ref._battler
+            const aftOption = !!battler ? battler.sequencer()._afterimage : null
+            if (!!aftOption && this.counter % aftOption.rate === 0){
+                this.counter = 0
+                const aftimg = new TBSE.Afterimage(this.ref, aftOption)
+                this.imagelist.push(aftimg)
+                TBSE.Afterimages._requestedImg.push({
+                    spr: aftimg,
+                    ref: this.ref
+                })
+            }
+        }
+    }
+
+    TBSE.Afterimages._requestedImg = []
+
+    TBSE.Afterimage = class extends Sprite{
+        constructor(sprite, options){
+            super()
+            this.clone(sprite, options)
+        }
+    
+        // Clone everything here
+        clone(sprite, options){
+            this._isActor = !!sprite._mainSprite
+            const sprObj = this._isActor ? sprite._mainSprite : sprite
+            this.sprite = sprObj
+            this.options = options
+            this.bitmap = sprObj.bitmap
+            this.opacity = 255
+            this.anchor.x = sprObj.anchor.x
+            this.anchor.y = sprObj.anchor.y
+            this.x = this._isActor ? sprObj.parent.x : sprObj.x
+            this.y = this._isActor ? sprObj.parent.y : sprObj.y
+            const frame = sprObj._frame
+            this.setFrame(frame.x, frame.y, frame.width, frame.height)
+        }
+    
+        update(){
+            Sprite.prototype.update.call(this)
+            this.opacity -= this.options.opacityEase
+        }
+    }
+        
+    //#endregion
+    //============================================================================================= 
+
     //============================================================================================= 
     //#region Sprite_Actor
     //---------------------------------------------------------------------------------------------
@@ -2074,6 +2447,13 @@ TBSE.init = function() {
         }
     };
     
+    // Inject afterimage handler
+    TBSE.spriteActor.createMainSpr = sa.createMainSprite
+    sa.createMainSprite = function() {
+        TBSE.spriteActor.createMainSpr.call(this)
+        this._afterimages = new TBSE.Afterimages(this)
+    };
+
     // Delete update motion. I have my own
     sa.updateMotion = function() {
     };
@@ -2085,6 +2465,7 @@ TBSE.init = function() {
     sa.updateShadow = function() {
         this._shadowSprite.visible = !! this._actor;
         this._shadowSprite.y = -2 + this.jumpHeight();
+        this._afterimages.update()
     };
 
     // Overwrite update frame
@@ -2115,12 +2496,24 @@ TBSE.init = function() {
     TBSE.spriteEnemy = {}
     const se = Sprite_Enemy.prototype
 
+    TBSE.spriteEnemy.initMembers = se.initMembers
+    se.initMembers = function() {
+        TBSE.spriteEnemy.initMembers()
+        this.createAfterimageHandler()
+    };
+
     TBSE.spriteEnemy.setBattler = se.setBattler
     se.setBattler = function(battler) {
         TBSE.spriteEnemy.setBattler.call(this, battler);
         if (battler !== undefined){
             TBSE._battlerSprites[battler.battlerKey()] = this;
         }
+    };
+
+    TBSE.spriteEnemy.update = se.update
+    Sprite_Enemy.prototype.update = function() {
+        TBSE.spriteEnemy.update.call(this)
+        this._afterimages.update()
     };
 
     // Lol I don't care about boss collapse effect
@@ -2141,6 +2534,10 @@ TBSE.init = function() {
             TBSE.spriteEnemy.updateFrame.call(this)
         }
     };
+
+    se.createAfterimageHandler = function(){
+        this._afterimages = new TBSE.Afterimages(this)
+    }
     //#endregion
     //============================================================================================= 
 
@@ -2171,6 +2568,20 @@ TBSE.init = function() {
         return 0;
     };
 
+    TBSE.sprset.update = sset.update
+    sset.update = function() {
+        TBSE.sprset.update.call(this)
+        this.updateAfterimages()
+    };
+
+    sset.updateAfterimages = function(){
+        for(const img of TBSE.Afterimages._requestedImg){
+            const indexInsert = this._battleField.getChildIndex(img.ref)
+            this._battleField.addChildAt(img.spr, indexInsert)
+            TBSE.Afterimages._requestedImg.remove(img)
+        }
+    }
+
     // I don't agree with automatic mirror
     sset.animationShouldMirror = function(target) {
         if(!target || !target.sequencer){
@@ -2200,7 +2611,8 @@ TBSE.init = function() {
         if (this.isAnimationForEach(animation) && !targets.center) { // Lemme decide if it is center or not, dammit!
             for (const target of targets) {
                 const arr = [target]
-                arr.fixed = targets.fixed                
+                arr.fixed = targets.fixed
+                arr.layer = targets.layer   
                 this.createAnimationSprite(arr, animation, mirror, delay);
                 delay += nextDelay;
             }
@@ -2209,10 +2621,20 @@ TBSE.init = function() {
         }
     }
 
+    TBSE.sprset.createAnimSpr = sset.createAnimationSprite
+    sset.createAnimationSprite = function(targets, animation, mirror, delay) {
+        TBSE.sprset.createAnimSpr.call(this, targets, animation, mirror, delay)
+        // Reorder the child position
+        if (targets.layer === "Back"){
+            spr = this._animationSprites[this._animationSprites.length - 1]
+            this._effectsContainer.removeChild(spr)
+            this._effectsContainer.addChildAt(spr, 0)
+        }
+    };
+
     TBSE.sprset.makeTargetSprites = sset.makeTargetSprites
     sset.makeTargetSprites = function(targets) {
         const targetSprites = TBSE.sprset.makeTargetSprites.call(this, targets);
-        //console.log(targets)
         if(targets.center){
             const centerSpr = this.makeCenterTarget(targetSprites)
             return [centerSpr]
@@ -2327,6 +2749,7 @@ TBSE.init = function() {
         }
         return db._nextDelay
     }
+
     //#endregion
     //============================================================================================= 
     //#region Animation handler for looping
