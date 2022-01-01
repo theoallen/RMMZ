@@ -90,11 +90,17 @@ the delay of each frame and all the timing on your own.
 @desc How many frames you need to wait until it completes its movement.
 
 @arg jump
-@text Jump Power
+@text Jump / Arch power
 @type number
 @default 0
 @min 0
 @desc Jump power. Higher number, higher jump.
+
+@arg movefn
+@type struct<movefunction>
+@text Movement Function
+@default {"x":"Linear","y":"Linear"}
+@desc Movement function
 
 //========================================================================
 // * Command - Move to position (Target)
@@ -142,7 +148,7 @@ the delay of each frame and all the timing on your own.
 @desc How many frames you need to wait until it completes its movement.
 
 @arg jump
-@text Jump Power
+@text Jump / Arch power
 @type number
 @default 0
 @min 0
@@ -284,7 +290,7 @@ the delay of each frame and all the timing on your own.
 @arg movefunc
 @type struct<movefunction>
 @text Movement Function
-@default {"moveX":"Linear","moveY":"Linear"}
+@default {"y":"Linear","y":"Linear"}
 @desc Movement function
 
 //========================================================================
@@ -507,6 +513,23 @@ If roll success/fail, it will affect all the next action effect until you reset 
 @desc Set toggles here
 
 //========================================================================
+// * Command - Blend Mode
+//========================================================================
+
+@command blend
+@text Blend Mode
+@desc Set blend mode to the sprite
+
+@arg mode
+@type select
+@text Mode
+@option Normal
+@option Add
+@option Sub
+@default Normal
+@desc Select the mode
+
+//========================================================================
 // * Command - Afterimage ON
 //========================================================================
 
@@ -524,7 +547,25 @@ If roll success/fail, it will affect all the next action effect until you reset 
 @text Ease
 @type number
 @default 20
-@desc Bigger number = faster fading 
+@desc Bigger number = faster fading
+
+@arg startOpacity
+@text Staring Opacity (%)
+@type number
+@min 1
+@max 100
+@default 100
+@desc Starting opacity at percentage. 100 = full
+
+@arg blendmode
+@text Blend Mode
+@type select
+@option Follow Sprite
+@option Normal
+@option Add
+@option Sub
+@default Follow Sprite
+@desc Select blend mode.
 
 //========================================================================
 // * Command - Afterimage OFF
@@ -548,7 +589,18 @@ If roll success/fail, it will affect all the next action effect until you reset 
 @min 0
 @max 255
 @default 128
-@desc Set the dimness from 0 to 255
+@desc Set the dimness from 0 to 255 (complete dark)
+
+@arg target
+@type select
+@text Target Focus
+@option Current Targets
+@option All opponents unit
+@option All friends units
+@option Everyone
+@option Self
+@default Current Targets
+@desc Select the focus scope
 
 @arg duration
 @type number
@@ -799,17 +851,86 @@ If roll success/fail, it will affect all the next action effect until you reset 
 */
 
 /*~struct~movefunction:
-@param moveX
+@param x
 @type select
 @text X Function
 @option Linear
-@option Smoooth
 
-@param moveY
+@option -------------------
+
+@option Ease OUT (1 - Smooth Linear)
+@option Ease OUT (2 - Smoother Linear)
+@option Ease OUT (3 - Non-Linear)
+@option Ease OUT (4 - Fast)
+@option Ease OUT (5 - Faster)
+@option Ease OUT (6 - Fastest)
+@option Ease OUT (7 - Circular easing)
+@option Ease OUT (8 - Bounce back)
+
+@option -------------------
+
+@option Ease IN (1 - Smooth Linear)
+@option Ease IN (2 - Smoother Linear)
+@option Ease IN (3 - Non-Linear)
+@option Ease IN (4 - Fast)
+@option Ease IN (5 - Faster)
+@option Ease IN (6 - Fastest)
+@option Ease IN (7 - Circular easing)
+@option Ease IN (8 - Bounce back)
+
+@option -------------------
+
+@option Ease IN-OUT (1 - Smooth Linear)
+@option Ease IN-OUT (2 - Smoother Linear)
+@option Ease IN-OUT (3 - Non-Linear)
+@option Ease IN-OUT (4 - Fast)
+@option Ease IN-OUT (5 - Faster)
+@option Ease IN-OUT (6 - Fastest)
+@option Ease IN-OUT (7 - Circular easing)
+@option Ease IN-OUT (8 - Bounce back)
+@default Linear
+@desc Select whether to use linear or easing function
+
+@param y
 @type select
 @text Y Function
 @option Linear
-@option Smoooth
+
+@option -------------------
+
+@option Ease OUT (1 - Smooth Linear)
+@option Ease OUT (2 - Smoother Linear)
+@option Ease OUT (3 - Non-Linear)
+@option Ease OUT (4 - Fast)
+@option Ease OUT (5 - Faster)
+@option Ease OUT (6 - Fastest)
+@option Ease OUT (7 - Circular easing)
+@option Ease OUT (8 - Bounce back)
+
+@option -------------------
+
+@option Ease IN (1 - Smooth Linear)
+@option Ease IN (2 - Smoother Linear)
+@option Ease IN (3 - Non-Linear)
+@option Ease IN (4 - Fast)
+@option Ease IN (5 - Faster)
+@option Ease IN (6 - Fastest)
+@option Ease IN (7 - Circular easing)
+@option Ease IN (8 - Bounce back)
+
+@option -------------------
+
+@option Ease IN-OUT (1 - Smooth Linear)
+@option Ease IN-OUT (2 - Smoother Linear)
+@option Ease IN-OUT (3 - Non-Linear)
+@option Ease IN-OUT (4 - Fast)
+@option Ease IN-OUT (5 - Faster)
+@option Ease IN-OUT (6 - Fastest)
+@option Ease IN-OUT (7 - Circular easing)
+@option Ease IN-OUT (8 - Bounce back)
+
+@default Linear
+@desc Select whether to use linear or easing function
 */
 
 /*~struct~animationsetup:
@@ -835,7 +956,7 @@ If roll success/fail, it will affect all the next action effect until you reset 
 const TBSE = {}
 TBSE.init = function() {
     this._pluginName = document.currentScript.src.match(/.+\/(.+)\.js/)[1]
-    this._version = '0.1.211231'  // <Major>.<Minor>.<YYMMDD>
+    this._version = '0.1.220101'  // <Major>.<Minor>.<YYMMDD>
 
     this._addons = []           // Store addons name
     this._battlerSprites = {}   // Store battler sprites
@@ -1027,18 +1148,6 @@ TBSE.init = function() {
         return [...$gameParty.allMembers(),...$gameTroop.members()] 
     }
 
-    // Linear movement function
-    this.linearFunc = (ori, target, time, maxTime) => {
-        return ori + ((target - ori) * time/maxTime);
-    }
-
-    // Smooth movement function
-    this.smoothFunc = function(ori, target, time, maxtime) {
-        const t = time / maxtime
-        const progress = Math.sin((t * Math.PI) / 2)
-        return ori + ((target - ori) * progress);
-    }
-
     // Return a random element from an array
     this.sample = function(array){
         return array[Math.floor(Math.random() * array.length)]
@@ -1110,6 +1219,96 @@ TBSE.init = function() {
         }
         return true;
     }
+
+    // https://easings.net/
+    // Might add more later if requested and I'm not too lazy.
+    this.Easings = {
+        linear: t => t, // Tbh this is stupid, but this is here for "modularity"
+        
+        // Out
+        outSine: t => Math.sin((t * Math.PI) / 2),
+        outQuad: t => 1 - (1 - t) * (1 - t),
+        outCubic: t => 1 - Math.pow(1 - t, 3),
+        outQuart: t => 1 - Math.pow(1 - t, 4),
+        outQuint: t => 1 - Math.pow(1 - t, 5),
+        outExpo: t => t === 1 ? 1 : 1 - Math.pow(2, -10 * t),
+        outCirc: t => Math.sqrt(1 - Math.pow(t - 1, 2)),
+        outBack: t => {
+            const c1 = 1.70158;
+            const c3 = c1 + 1;
+            return 1 + c3 * pow(t - 1, 3) + c1 * pow(t - 1, 2)
+        },
+
+        // In
+        inSine: t => 1 - Math.cos((t * Math.PI) / 2),
+        inQuad: t => t * t,
+        inCubic: t => t * t * t,
+        inQuart: t => t * t * t * t,
+        inQuint: t => t * t * t * t * t,
+        inExpo: t => t === 0 ? 0 : Math.pow(2, 10 * t - 10),
+        inCirc: t => 1 - Math.sqrt(1 - Math.pow(t, 2)),
+        inBack: t => {
+            const c1 = 1.70158;
+            const c3 = c1 + 1;
+            return c3 * t * t * t - c1 * t * t
+        },
+
+        // In-Out Mix
+        inOutSine: t => -(Math.cos(Math.PI * t) - 1) / 2,
+        inOutQuad: t => t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2,
+        inOutCubic: t => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2,
+        inOutQuart: t => t < 0.5 ? 8 * t * t * t * t : 1 - Math.pow(-2 * t + 2, 4) / 2,
+        inOutQuint: t => t < 0.5 ? 16 * t * t * t * t * t : 1 - Math.pow(-2 * t + 2, 5) / 2,
+        inOutExpo: t => x === 0 ? 0 : t === 1 ? 1 : t < 0.5 ? Math.pow(2, 20 * t - 10) / 2 : (2 - Math.pow(2, -20 * t + 10)) / 2,
+        inOutCirc: t => x < 0.5 ? (1 - Math.sqrt(1 - Math.pow(2 * t, 2))) / 2 : (Math.sqrt(1 - Math.pow(-2 * t + 2, 2)) + 1) / 2,
+        inOutBack: t => {
+            const c1 = 1.70158; const c2 = c1 * 1.525;
+
+            return x < 0.5 
+            ? (Math.pow(2 * t, 2) * ((c2 + 1) * 2 * t - c2)) / 2
+            : (Math.pow(2 * t - 2, 2) * ((c2 + 1) * (t * 2 - 2) + c2) + 2) / 2;},
+        
+    }
+
+    this.Easings.getFunction = str => {
+        const nameMap = {
+            "Ease OUT (1 - Smooth Linear)": TBSE.Easings.outSine,
+            "Ease OUT (2 - Smoother Linear)": TBSE.Easings.outQuad,
+            "Ease OUT (3 - Non-Linear)": TBSE.Easings.outCubic,
+            "Ease OUT (4 - Fast)": TBSE.Easings.outQuart,
+            "Ease OUT (5 - Faster)": TBSE.Easings.outQuint,
+            "Ease OUT (6 - Fastest)": TBSE.Easings.outExpo,
+            "Ease OUT (7 - Circular easing)": TBSE.Easings.outCirc,
+            "Ease OUT (8 - Bounce back)": TBSE.Easings.outBack,
+    
+            "Ease IN (1 - Smooth Linear)": TBSE.Easings.inSine,
+            "Ease IN (2 - Smoother Linear)": TBSE.Easings.inQuad,
+            "Ease IN (3 - Non-Linear)": TBSE.Easings.inCubic,
+            "Ease IN (4 - Fast)": TBSE.Easings.inQuart,
+            "Ease IN (5 - Faster)": TBSE.Easings.inQuint,
+            "Ease IN (6 - Fastest)": TBSE.Easings.inExpo,
+            "Ease IN (7 - Circular easing)": TBSE.Easings.inCirc,
+            "Ease IN (8 - Bounce back)": TBSE.Easings.inBack,
+    
+            "Ease IN-OUT (1 - Smooth Linear)": TBSE.Easings.inOutSine,
+            "Ease IN-OUT (2 - Smoother Linear)": TBSE.Easings.inOutQuad,
+            "Ease IN-OUT (3 - Non-Linear)": TBSE.Easings.inOutCubic,
+            "Ease IN-OUT (4 - Fast)": TBSE.Easings.inOutQuart,
+            "Ease IN-OUT (5 - Faster)": TBSE.Easings.inOutQuint,
+            "Ease IN-OUT (6 - Fastest)": TBSE.Easings.inOutExpo,
+            "Ease IN-OUT (7 - Circular easing)": TBSE.Easings.inOutCirc,
+            "Ease IN-OUT (8 - Bounce back)": TBSE.Easings.inOutBack,
+        }
+        return nameMap[str] || TBSE.Easings[str] || TBSE.Easings.linear
+    }
+
+    // Easing function that returns the actual value
+    this.Easings.fn = (ori, target, time, maxTime, fnName) => {
+        const t = time / maxTime
+        const progress = TBSE.Easings.getFunction(fnName)(t)
+        return ori + ((target - ori) * progress);
+    }
+
     //#endregion
     //=============================================================================================
 
@@ -1133,8 +1332,7 @@ TBSE.init = function() {
 
     // Move command
     cmd.move = function(args){
-        args.moveFuncX ||= "linearFunc"
-        args.moveFuncY ||= "linearFunc"
+        args.movefn = JSON.parse(args.movefn)
         const spr = this.sprite();
         let targX = TBSE.evalNumber.call(this, args.x)
         let targY = TBSE.evalNumber.call(this, args.y)
@@ -1157,15 +1355,13 @@ TBSE.init = function() {
                 targY += this.homePos().y;
                 break;
         }
-        spr.goto(targX, targY, args.dur, args.jump, args.moveFuncX, args.moveFuncY)
+        spr.goto(targX, targY, args.dur, args.jump, args.movefn.x, args.movefn.y)
     }
 
     // Move command (target)
     cmd.moveTarget = function(args){
-        args.moveFuncX ||= "linearFunc"
-        args.moveFuncY ||= "linearFunc"
+        args.movefn = JSON.parse(args.movefn)
         const seq = this.sequencer()
-        
         // Individual
         if(args.scope == "Individual"){
             for(const t of seq._targetArray){
@@ -1186,7 +1382,7 @@ TBSE.init = function() {
                         targY += t.homePos().y;
                         break;
                 }
-                spr.goto(targX, targY, args.dur, args.jump, args.moveFuncX, args.moveFuncY)
+                spr.goto(targX, targY, args.dur, args.jump, args.movefn.x, args.movefn.y)
             }
 
         // Center Mass
@@ -1577,10 +1773,26 @@ TBSE.init = function() {
     }
 
     cmd.aftOn = function(args){
-        this.sequencer()._afterimage = {
-            rate: args.rate,
-            opacityEase: args.opacityEase
+        const aft = {
+            rate: Number(args.rate),
+            opacityEase: Number(args.opacityEase),
+            startOpacity: Number(args.startOpacity)
         }
+        switch(args.blendmode){
+            case "Follow Sprite":
+                aft.blendMode = -1
+                break;
+            case "Normal":
+                aft.blendMode = 0
+                break;
+            case "Add":
+                aft.blendMode = 1
+                break;
+            case "Sub":
+                aft.blendMode = 2
+                break;
+        }
+        this.sequencer()._afterimage = aft
     }
 
     cmd.aftOff = function(){
@@ -1588,7 +1800,58 @@ TBSE.init = function() {
     }
 
     cmd.projectile = function(args){
-        console.log(args)
+        //console.log(args)
+    }
+    
+    // dim, target, duration
+    cmd.focusOn = function(args){
+        if(args.target !== "Everyone"){
+            let fn;
+            switch(args.target){
+                case "Current Targets":
+                    fn = t => this.sequencer()._targetArray.includes(t)
+                    break;
+                case "All opponents unit":
+                    fn = t => this.opponentsUnit().members().includes(t)
+                    break;
+                case "All friends units":
+                    fn = t => this.friendsUnit().members().includes(t)
+                    break;
+                case "Self":
+                    fn = () => false
+                    break;
+            }
+            for(const battler of [...$gameParty.battleMembers(), ...$gameTroop.members()]){
+                if(battler !== this && (battler.isActor() ? true : battler.isAlive())){
+                    const check = fn(battler)
+                    if(!check && battler.sprite()){
+                        battler.sprite().startFade("out", args.duration)
+                    }
+                }
+            }
+        }
+    }
+
+    cmd.focusOff = function(args){
+        for(const battler of [...$gameParty.battleMembers(), ...$gameTroop.members()]){
+            if((battler.isActor() || battler.isAlive()) && battler.sprite()){
+                battler.sprite().startFade("in", args.duration)
+            }
+        }
+    }
+
+    cmd.blend = function(args){
+        switch(args.mode){
+            case "Normal":
+                this.sequencer()._blendMode = 0
+                break;
+            case "Add":
+                this.sequencer()._blendMode = 1
+                break;
+            case "Sub":
+                this.sequencer()._blendMode = 2
+                break;
+        }
     }
     //#endregion
     //=============================================================================================
@@ -1605,12 +1868,11 @@ TBSE.init = function() {
             this._action = new TBSE.Action(battler);
             this._interpreter = new TBSE.Sequence_Interpreter(battler, 0);
             this._actionRecord = new TBSE.ActionRecord();
-            this._afterimage = null
-            this.clear()
+            this.initProperties()
             this.startIdleMotion()
         }
 
-        clear(){
+        initProperties(){
             this._animCell = 0                                  // Store the current shown sheet frame
             this._itemInUse = null                              // Store the currently used item/skill
             this._oriTargets = []                               // Store the original targets
@@ -1619,6 +1881,8 @@ TBSE.init = function() {
             this._originalItemUse = null                        // Store the original item use
             this._victims = []                                  // Record All target victims (not necessarily a victim, it just a funny variable name)
             this._flip = TBSE.defaultFlip(this.dataBattler())   // Determine if the battler image is flipped
+            this._afterimage = null                             // Afterimage
+            this._blendMode = 0
         }
 
         battler(){
@@ -2283,7 +2547,6 @@ TBSE.init = function() {
     TBSE.spriteBattler.initMembers = sb.initMembers
     sb.initMembers = function(){
         TBSE.spriteBattler.initMembers.call(this)
-        this._usedFunc = TBSE.linearFunc;   // Move function
         this._tbseMoveDuration = 0;         // Current duration (count down)
         this._maxDuration = 0;              // Maximum duration
         this._jumpPower = 0;                // Jump force
@@ -2315,32 +2578,55 @@ TBSE.init = function() {
     TBSE.spriteBattler.updateMain = sb.updateMain
     sb.updateMain = function(){
         TBSE.spriteBattler.updateMain.call(this)
-        // This mirror function is kinda stupid.
         if(this._battler){
-            this.scale.x = Math.abs(this.scale.x) * (this._battler.sequencer()._flip ? -1 : 1)
+            this.updateTBSE()
         }
     }
 
+    sb.updateTBSE = function(){
+        this.scale.x = Math.abs(this.scale.x) * (this._battler.sequencer()._flip ? -1 : 1)
+        if (this._updateFading){
+            if(this._updateFading.duration > 0){
+                const t = this._updateFading.maxDuration - this._updateFading.duration
+                const oriOp = this._updateFading.start
+                const trgOp = this._updateFading.end
+                this.opacity = TBSE.Easings.fn(oriOp, trgOp, t, this._updateFading.maxDuration, this._updateFading.fnName)
+                this._updateFading.duration--
+            }else{
+                this._updateFading = undefined
+            }
+        }
+    }
+    // Fadein
+    sb.startFade = function(mode, dur, fn = "outQuint"){
+        this._updateFading = {
+            maxDuration: dur,
+            duration: dur,
+            start: this.opacity,
+            end: (mode === "out" ? 0 : 255),
+            fnName: fn
+        }
+    }
     // Overwrite update position
     sb.updatePosition = function() {
         if (this._tbseMoveDuration > 0) {
             const time = this._maxDuration - this._tbseMoveDuration
-            this._displayX = this._usedFuncX(this._oriX, this._targX, time, this._maxDuration)
-            this._displayY = this._usedFuncY(this._oriY, this._targY, time, this._maxDuration)
+            this._displayX = TBSE.Easings.fn(this._oriX, this._targX, time, this._maxDuration, this._fnX)
+            this._displayY = TBSE.Easings.fn(this._oriY, this._targY, time, this._maxDuration, this._fnY)
             this._tbseMoveDuration -= 1;
             if (this._tbseMoveDuration === 0){
                 this._displayX = this._targX;
                 this._displayY = this._targY;
             }
         }
-        // Offset is preserved for the default move function
+        // Offset is preserved for the default move function (step forward for selecting)
         // Home position is not used
         this.x = this._displayX + this._offsetX;
         this.y = this._displayY + this._offsetY - this.jumpHeight();
     };
 
     // It is possible to use a different function, for example, if you want to use easing movement
-    sb.goto = function(x, y, duration, jump = 0, funcNameX = "linearFunc", funcNameY = "linearFunc"){
+    sb.goto = function(x, y, duration, jump = 0, fnX = "Linear", fnY = "Linear"){
         this._maxDuration = duration;
         this._jumpPower = jump;
         this._targX = x;
@@ -2348,8 +2634,8 @@ TBSE.init = function() {
         this._oriX = this._displayX;
         this._oriY = this._displayY;
         this._tbseMoveDuration = duration;
-        this._usedFuncX = TBSE[funcNameX];
-        this._usedFuncY = TBSE[funcNameY];
+        this._fnX = fnX;
+        this._fnY = fnY;
     }
 
     sb.jumpHeight = function(){
@@ -2410,16 +2696,19 @@ TBSE.init = function() {
     
         // Clone everything here
         clone(sprite, options){
-            this._isActor = !!sprite._mainSprite
-            const sprObj = this._isActor ? sprite._mainSprite : sprite
+            const isActor = !!sprite._mainSprite
+            const sprObj = isActor ? sprite._mainSprite : sprite
             this.sprite = sprObj
             this.options = options
             this.bitmap = sprObj.bitmap
-            this.opacity = 255
+            this.opacity = sprObj.opacity * (options.startOpacity / 100)
             this.anchor.x = sprObj.anchor.x
             this.anchor.y = sprObj.anchor.y
-            this.x = this._isActor ? sprObj.parent.x : sprObj.x
-            this.y = this._isActor ? sprObj.parent.y : sprObj.y
+            this.scale.x = sprObj.scale.x
+            this.scale.y = sprObj.scale.y
+            this.blendMode = options.blendMode === -1 ? sprObj.blendMode : options.blendMode
+            this.x = isActor ? sprObj.parent.x : sprObj.x
+            this.y = isActor ? sprObj.parent.y : sprObj.y
             const frame = sprObj._frame
             this.setFrame(frame.x, frame.y, frame.width, frame.height)
         }
@@ -2465,9 +2754,13 @@ TBSE.init = function() {
     sa.updateShadow = function() {
         this._shadowSprite.visible = !! this._actor;
         this._shadowSprite.y = -2 + this.jumpHeight();
-        this._afterimages.update()
     };
 
+    sa.updateTBSE = function(){
+        sb.updateTBSE.call(this)
+        this._afterimages.update()
+        this._mainSprite.blendMode = this._battler.sequencer()._blendMode
+    }
     // Overwrite update frame
     sa.updateFrame = function() {
         Sprite_Battler.prototype.updateFrame.call(this);
@@ -2498,8 +2791,8 @@ TBSE.init = function() {
 
     TBSE.spriteEnemy.initMembers = se.initMembers
     se.initMembers = function() {
-        TBSE.spriteEnemy.initMembers()
-        this.createAfterimageHandler()
+        TBSE.spriteEnemy.initMembers.call(this)
+        this._afterimages = new TBSE.Afterimages(this)
     };
 
     TBSE.spriteEnemy.setBattler = se.setBattler
@@ -2508,12 +2801,6 @@ TBSE.init = function() {
         if (battler !== undefined){
             TBSE._battlerSprites[battler.battlerKey()] = this;
         }
-    };
-
-    TBSE.spriteEnemy.update = se.update
-    Sprite_Enemy.prototype.update = function() {
-        TBSE.spriteEnemy.update.call(this)
-        this._afterimages.update()
     };
 
     // Lol I don't care about boss collapse effect
@@ -2535,12 +2822,31 @@ TBSE.init = function() {
         }
     };
 
-    se.createAfterimageHandler = function(){
-        this._afterimages = new TBSE.Afterimages(this)
+    se.updateTBSE = function(){
+        sb.updateTBSE.call(this)
+        this._afterimages.update()
+        this.blendMode = this._battler.sequencer()._blendMode
     }
+
     //#endregion
     //============================================================================================= 
 
+    TBSE.Focus = {
+        Sprite: class extends ScreenSprite{
+            constructor(){
+                super()
+                this.setBlack()
+            }
+
+            update(){
+                Sprite.prototype.update.call(this)
+                this.opacity = TBSE.Focus.maxOpacity * TBSE.Focus.dimRate
+            }
+        },
+
+        dimRate: 0.0, // From 0.0 (lowest) to 1.0 (maximum)
+        maxOpacity: 180 // Maximum opacity
+    }
     //============================================================================================= 
     //#region Spriteset_Battle
     //---------------------------------------------------------------------------------------------
@@ -2552,6 +2858,13 @@ TBSE.init = function() {
         TBSE.sprset.init.call(this)
         this._fixedAnimeHandler = []
     }
+
+    // TBSE.sprset.createbb = sset.createBattleback
+    // sset.createBattleback = function() {
+    //     TBSE.sprset.createbb.call(this)
+    //     this._focusBG = new TBSE.Focus.Sprite()
+    //     this._baseSprite.addChild(this._focusBG)
+    // };
 
     TBSE.sprset.isBusy = sset.isBusy
     sset.isBusy = function() {
@@ -2834,7 +3147,7 @@ TBSE.init = function() {
     wb.startAction = function(subject, action, targets) {
         const item = action.item();
         this.displayAction(subject, item);
-        // <Intercept reaction here later>
+        
         this.push("tbse_actionMain", subject, targets, item);
         this.push("tbse_actionCounter", subject, targets, item)
         this.push("tbse_actionEnd", subject, item);
