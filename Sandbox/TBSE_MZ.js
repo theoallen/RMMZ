@@ -2689,8 +2689,8 @@ TBSE.init = function() {
             this.counter++
             for(const img of this.imagelist){
                 if(img.opacity <= 0){
-                    img.destroy()
                     this.imagelist.remove(img)
+                    TBSE.Afterimages._expiredImg.push(img)
                 }
             }
         }
@@ -2712,6 +2712,7 @@ TBSE.init = function() {
     }
 
     TBSE.Afterimages._requestedImg = []
+    TBSE.Afterimages._expiredImg = []
 
     TBSE.Afterimage = class extends Sprite{
         constructor(sprite, options){
@@ -2907,12 +2908,12 @@ TBSE.init = function() {
         this._battleField.sortableChildren = true
     };
 
+
     TBSE.sprset.isBusy = sset.isBusy
     sset.isBusy = function() {
         return TBSE.sprset.isBusy.call(this) || TBSE.isSequenceBusy();
     };
 
-    // Delete delay
     sset.animationBaseDelay = function() {
         return 0;
     };
@@ -2936,9 +2937,13 @@ TBSE.init = function() {
     }
 
     sset.updateAfterimages = function(){
-        for(const img of TBSE.Afterimages._requestedImg){
+        for(const img of [...TBSE.Afterimages._requestedImg]){
             this._battleField.addChild(img.spr)
             TBSE.Afterimages._requestedImg.remove(img)
+        }
+        for(const img of [...TBSE.Afterimages._expiredImg]){
+            img.destroy()
+            TBSE.Afterimages._expiredImg.remove(img)
         }
     }
 
