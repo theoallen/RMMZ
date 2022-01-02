@@ -112,7 +112,7 @@ Easings = {
             if(movement.duration-- > 0){
                 const t = movement.maxDuration - movement.duration
                 movement.object.x = Easings.fn(movement.startX, movement.endingX, t, movement.maxDuration, movement.fnName)
-                movement.object.y = Easings.fn(movement.startX, movement.endingX, t, movement.maxDuration, movement.fnName)
+                movement.object.y = Easings.fn(movement.startY, movement.endingY, t, movement.maxDuration, movement.fnName)
                 if(movement.duration <= 0){
                     movefn.done = true
                 }
