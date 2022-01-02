@@ -465,8 +465,9 @@ If roll success/fail, it will affect all the next action effect until you reset 
 @arg layer
 @text Layer
 @type select
-@option Back
 @option Front
+@option Dynamoc (Follow Sprite)
+@option Back
 @default Front
 @desc Play the animation on the back/front of the sprite
 
@@ -550,7 +551,7 @@ If roll success/fail, it will affect all the next action effect until you reset 
 @desc Bigger number = faster fading
 
 @arg startOpacity
-@text Staring Opacity (%)
+@text Starting Opacity (%)
 @type number
 @min 1
 @max 100
@@ -622,7 +623,7 @@ If roll success/fail, it will affect all the next action effect until you reset 
 @text Fading in duration
 @min 1
 @default 35
-@desc Duration to full dim
+@desc Duration to restore
 
 //========================================================================
 // * Command - Check collapse, check if the target dies
@@ -956,7 +957,7 @@ If roll success/fail, it will affect all the next action effect until you reset 
 const TBSE = {}
 TBSE.init = function() {
     this._pluginName = document.currentScript.src.match(/.+\/(.+)\.js/)[1]
-    this._version = '0.1.220101'  // <Major>.<Minor>.<YYMMDD>
+    this._version = '0.1.220102'  // <Major>.<Minor>.<YYMMDD>
 
     this._addons = []           // Store addons name
     this._battlerSprites = {}   // Store battler sprites
@@ -1155,7 +1156,7 @@ TBSE.init = function() {
 
     // Clears sprite reference
     this.clearSpriteReference = function(){
-        TBSE._battlerSprites
+        TBSE._battlerSprites = {}
     }
 
     // Get common event based on the name
@@ -1332,7 +1333,7 @@ TBSE.init = function() {
 
     // Move command
     cmd.move = function(args){
-        args.movefn = JSON.parse(args.movefn)
+        args.movefn = (typeof args.movefn === "string" ? JSON.parse(args.movefn) : args.movefn)
         const spr = this.sprite();
         let targX = TBSE.evalNumber.call(this, args.x)
         let targY = TBSE.evalNumber.call(this, args.y)
@@ -1803,8 +1804,12 @@ TBSE.init = function() {
         //console.log(args)
     }
     
-    // dim, target, duration
     cmd.focusOn = function(args){
+        TBSE.Focus.duration = Number(args.duration)
+        TBSE.Focus.maxDuration = Number(args.duration)
+        TBSE.Focus.startOp = 0
+        TBSE.Focus.targetOp = Number(args.dim)
+
         if(args.target !== "Everyone"){
             let fn;
             switch(args.target){
@@ -1821,7 +1826,7 @@ TBSE.init = function() {
                     fn = () => false
                     break;
             }
-            for(const battler of [...$gameParty.battleMembers(), ...$gameTroop.members()]){
+            for(const battler of [...$gameTroop.members(), ...$gameParty.battleMembers()]){
                 if(battler !== this && (battler.isActor() ? true : battler.isAlive())){
                     const check = fn(battler)
                     if(!check && battler.sprite()){
@@ -1833,6 +1838,12 @@ TBSE.init = function() {
     }
 
     cmd.focusOff = function(args){
+
+        TBSE.Focus.duration = Number(args.duration)
+        TBSE.Focus.maxDuration = Number(args.duration)
+        TBSE.Focus.startOp = Number(TBSE.Focus.targetOp)
+        TBSE.Focus.targetOp = 0
+
         for(const battler of [...$gameParty.battleMembers(), ...$gameTroop.members()]){
             if((battler.isActor() || battler.isAlive()) && battler.sprite()){
                 battler.sprite().startFade("in", args.duration)
@@ -2290,15 +2301,15 @@ TBSE.init = function() {
     //#region Game_Battler 
     //---------------------------------------------------------------------------------------------
     TBSE.battler = {}
-    const bb = Game_Battler.prototype;
+    const gb = Game_Battler.prototype;
 
-    TBSE.battler.onBattleStart = bb.onBattleStart
-    bb.onBattleStart = function(){
+    TBSE.battler.onBattleStart = gb.onBattleStart
+    gb.onBattleStart = function(){
         TBSE.battler.onBattleStart.call(this);
         TBSE._sequencer[this.battlerKey()] = new TBSE.Sequencer(this)
     }
 
-    bb.dataBattler = function(){
+    gb.dataBattler = function(){
         if(this.isActor()){
             return $dataActors[this._actorId]
         }else{
@@ -2307,29 +2318,29 @@ TBSE.init = function() {
     }
 
     // Sideview battler name suffix
-    bb.svsuffix = function(){
+    gb.svsuffix = function(){
         return this.sequencer()._suffix
     }
 
-    bb.sequencer = function(){
+    gb.sequencer = function(){
         return TBSE._sequencer[this.battlerKey()]
     }
 
-    bb.homePos = function() {
+    gb.homePos = function() {
         return {
             x: 0,
             y: 0
         }
     }
 
-    bb.updateSequencer = function(){
+    gb.updateSequencer = function(){
         const seq = this.sequencer()
         if(seq){
             seq.update();
         }
     }
 
-    bb.battlerKey = function(){
+    gb.battlerKey = function(){
         if (this.isActor()){
             return `a${this._actorId}`
         }else{
@@ -2337,16 +2348,16 @@ TBSE.init = function() {
         }
     }
 
-    bb.sprite = function(){
+    gb.sprite = function(){
         return TBSE._battlerSprites[this.battlerKey()]
     }
 
-    bb.clearActionSequence = function(){
+    gb.clearActionSequence = function(){
         delete TBSE._sequencer[this.battlerKey()]
     }
 
     // Check if the battler is busy doing action
-    bb.isDoingAction = function(){
+    gb.isDoingAction = function(){
         const seq = this.sequencer()
         if (seq === undefined){
             return false
@@ -2355,8 +2366,8 @@ TBSE.init = function() {
     }
 
     // Record result while clearing the damage popup
-    TBSE.battler.clearPopup = bb.clearDamagePopup
-    bb.clearDamagePopup = function() {
+    TBSE.battler.clearPopup = gb.clearDamagePopup
+    gb.clearDamagePopup = function() {
         TBSE.battler.clearPopup.call(this)
         if(this.sequencer()){
             this.sequencer()._actionRecord.addRecord(this._result)
@@ -2364,13 +2375,13 @@ TBSE.init = function() {
     };
 
     // Return to original position
-    bb.returnHome = function(){
+    gb.returnHome = function(){
         const home = this.homePos()
         this.sprite().goto(home.x, home.y, 10, 0)
     }
 
     // Check if elegible for collapse effect (i.e, dead)
-    bb.checkCollapse = function(){
+    gb.checkCollapse = function(){
         if(TBSE.canCollapse.call(this)){
             this.performCollapse()
         }
@@ -2385,16 +2396,16 @@ TBSE.init = function() {
     }
 
     // Refresh collapse state
-    TBSE.battler.refresh = bb.refresh
-    bb.refresh = function(){
+    TBSE.battler.refresh = gb.refresh
+    gb.refresh = function(){
         TBSE.battler.refresh.call(this)
         if(this.hp > 0){
             this._collapsed = false
         }
     }
 
-    TBSE.battler.performCollapse = bb.performCollapse
-    bb.performCollapse = function() {
+    TBSE.battler.performCollapse = gb.performCollapse
+    gb.performCollapse = function() {
         const collapseKeyId = this.dataBattler()._sequenceList.collapse
         if(collapseKeyId > 0){
             this.sequencer().doAction(collapseKeyId)
@@ -2404,11 +2415,11 @@ TBSE.init = function() {
         this._collapsed = true
     };
 
-    bb.counterSkill = function(){
+    gb.counterSkill = function(){
         return $dataSkills[this.counterSkillId()]
     }
     
-    bb.counterSkillId = function(){
+    gb.counterSkillId = function(){
         const db = this.dataBattler()
         if(db._counterSkillId === undefined){
             db._counterSkillId = this.attackSkillId()
@@ -2431,7 +2442,7 @@ TBSE.init = function() {
     }
 
     // Might turn into ._states if too many plugins used states() function and causes a lot of complication
-    bb.stateAnim = function(){
+    gb.stateAnim = function(){
         return this.states().filter(s => TBSE.stateAnim(s) > 0).map(s => TBSE.stateAnim(s))
     }
     //#endregion
@@ -2575,6 +2586,12 @@ TBSE.init = function() {
         }
     };
 
+    TBSE.spriteBattler.createDamageSpr = sb.createDamageSprite
+    sb.createDamageSprite = function() {
+        TBSE.spriteBattler.createDamageSpr.call(this)
+        this._damages[this._damages.length - 1].zIndex = Graphics.height * 3 + 100
+    };
+
     TBSE.spriteBattler.updateMain = sb.updateMain
     sb.updateMain = function(){
         TBSE.spriteBattler.updateMain.call(this)
@@ -2585,20 +2602,26 @@ TBSE.init = function() {
 
     sb.updateTBSE = function(){
         this.scale.x = Math.abs(this.scale.x) * (this._battler.sequencer()._flip ? -1 : 1)
+        this.zIndex = this.zFormula()
         if (this._updateFading){
             if(this._updateFading.duration > 0){
+                this._updateFading.duration--
                 const t = this._updateFading.maxDuration - this._updateFading.duration
                 const oriOp = this._updateFading.start
                 const trgOp = this._updateFading.end
                 this.opacity = TBSE.Easings.fn(oriOp, trgOp, t, this._updateFading.maxDuration, this._updateFading.fnName)
-                this._updateFading.duration--
             }else{
+                this.opacity = this._updateFading.end
                 this._updateFading = undefined
             }
         }
     }
+
+    sb.zFormula = function(){
+        return this._displayY * 2
+    }
     // Fadein
-    sb.startFade = function(mode, dur, fn = "outQuint"){
+    sb.startFade = function(mode, dur, fn = "Linear"){
         this._updateFading = {
             maxDuration: dur,
             duration: dur,
@@ -2653,7 +2676,7 @@ TBSE.init = function() {
     //=============================================================================================
     //#region Afterimage
     //---------------------------------------------------------------------------------------------
-    TBSE.Afterimages = class {
+    TBSE.Afterimages = class {//class extends Sprite{
         constructor(ref){
             this.imagelist = []
             this.ref = ref
@@ -2661,6 +2684,7 @@ TBSE.init = function() {
         }
     
         update(){
+            this.zIndex = this.ref.zIndex - 1
             this.generateAfterimage()
             this.counter++
             for(const img of this.imagelist){
@@ -2677,6 +2701,7 @@ TBSE.init = function() {
             if (!!aftOption && this.counter % aftOption.rate === 0){
                 this.counter = 0
                 const aftimg = new TBSE.Afterimage(this.ref, aftOption)
+                aftimg.zIndex = this.zIndex
                 this.imagelist.push(aftimg)
                 TBSE.Afterimages._requestedImg.push({
                     spr: aftimg,
@@ -2716,6 +2741,7 @@ TBSE.init = function() {
         update(){
             Sprite.prototype.update.call(this)
             this.opacity -= this.options.opacityEase
+            this.zIndex -= 1
         }
     }
         
@@ -2840,12 +2866,21 @@ TBSE.init = function() {
 
             update(){
                 Sprite.prototype.update.call(this)
-                this.opacity = TBSE.Focus.maxOpacity * TBSE.Focus.dimRate
+                if(TBSE.Focus.duration > 0){
+                    TBSE.Focus.duration--
+                    const t = TBSE.Focus.maxDuration - TBSE.Focus.duration
+                    const oriOp = TBSE.Focus.startOp
+                    const trgOp = TBSE.Focus.targetOp
+                    this.opacity = TBSE.Easings.fn(oriOp, trgOp, t, TBSE.Focus.maxDuration, TBSE.Focus.fnName)
+                }
             }
         },
 
-        dimRate: 0.0, // From 0.0 (lowest) to 1.0 (maximum)
-        maxOpacity: 180 // Maximum opacity
+        duration: 0,
+        maxDuration: 0,
+        startOp: 0,
+        targetOp: 180,
+        fnName: "Linear",
     }
     //============================================================================================= 
     //#region Spriteset_Battle
@@ -2859,12 +2894,18 @@ TBSE.init = function() {
         this._fixedAnimeHandler = []
     }
 
-    // TBSE.sprset.createbb = sset.createBattleback
-    // sset.createBattleback = function() {
-    //     TBSE.sprset.createbb.call(this)
-    //     this._focusBG = new TBSE.Focus.Sprite()
-    //     this._baseSprite.addChild(this._focusBG)
-    // };
+    TBSE.sprset.createbb = sset.createBattleback
+    sset.createBattleback = function() {
+        TBSE.sprset.createbb.call(this)
+        this._focusBG = new TBSE.Focus.Sprite()
+        this._baseSprite.addChild(this._focusBG)
+    };
+
+    TBSE.sprset.createbf = sset.createBattleField
+    Spriteset_Battle.prototype.createBattleField = function() {
+        TBSE.sprset.createbf.call(this)
+        this._battleField.sortableChildren = true
+    };
 
     TBSE.sprset.isBusy = sset.isBusy
     sset.isBusy = function() {
@@ -2884,13 +2925,19 @@ TBSE.init = function() {
     TBSE.sprset.update = sset.update
     sset.update = function() {
         TBSE.sprset.update.call(this)
+        this.updateTBSE()
         this.updateAfterimages()
     };
 
+    sset.updateTBSE = function(){
+        for(const spr of this._animationSprites){
+            TBSE.updateZindex(spr)
+        }
+    }
+
     sset.updateAfterimages = function(){
         for(const img of TBSE.Afterimages._requestedImg){
-            const indexInsert = this._battleField.getChildIndex(img.ref)
-            this._battleField.addChildAt(img.spr, indexInsert)
+            this._battleField.addChild(img.spr)
             TBSE.Afterimages._requestedImg.remove(img)
         }
     }
@@ -2937,12 +2984,9 @@ TBSE.init = function() {
     TBSE.sprset.createAnimSpr = sset.createAnimationSprite
     sset.createAnimationSprite = function(targets, animation, mirror, delay) {
         TBSE.sprset.createAnimSpr.call(this, targets, animation, mirror, delay)
-        // Reorder the child position
-        if (targets.layer === "Back"){
-            spr = this._animationSprites[this._animationSprites.length - 1]
-            this._effectsContainer.removeChild(spr)
-            this._effectsContainer.addChildAt(spr, 0)
-        }
+        const spr = this._animationSprites[this._animationSprites.length - 1]
+        spr._layer = targets.layer // Update layer information
+        TBSE.updateZindex(spr)
     };
 
     TBSE.sprset.makeTargetSprites = sset.makeTargetSprites
@@ -2964,6 +3008,7 @@ TBSE.init = function() {
         spr._trackThis = true 
         spr.x = targets.reduce((total, trg)=>{ return trg.x + total}, 0) / targets.length
         spr.y = targets.reduce((total, trg)=>{ return trg.y + total}, 0) / targets.length
+        spr.zIndex = targets.reduce((total, trg)=>{ return trg.zIndex + total}, 0) / targets.length
         this._fixedAnimeHandler.push(spr)
         this._battleField.addChild(spr)
         const arrRef = [this._fixedAnimeHandler, this._battleField]
@@ -2982,6 +3027,7 @@ TBSE.init = function() {
             spr._trackThis = true
             spr.x = t.x
             spr.y = t.y
+            spr.zIndex = t.zIndex
             spr.setFrame(0, 0, t.width, t.height)
             this._fixedAnimeHandler.push(spr)
             this._battleField.addChild(spr)
@@ -3041,6 +3087,7 @@ TBSE.init = function() {
                 const delay = TBSE.getEffekseerLoopDelay(animation)
                 // This will be improved later
                 // For example, instead of delay, it will be length. If length >= <number> play a new duplicated animation. Do not restart.
+                // But I don't even use effekseer, so maybe far in the future.
                 if(delay > 0){
                     const sprite2 = new TBSE.AnimationLoop()
                     sprite2.setup(targetSprite, animation, false, delay, 0);
@@ -3063,6 +3110,16 @@ TBSE.init = function() {
         return db._nextDelay
     }
 
+    TBSE.updateZindex = (sprAnimation) => {
+        if(sprAnimation._layer === "Back"){
+            sprAnimation.zIndex = 0
+        }else if (sprAnimation._layer === "Front"){
+            sprAnimation.zIndex = Graphics.height * 3
+        }else{
+            sprAnimation.zIndex = (sprAnimation._targets.reduce((total, trg)=>{ return trg.zIndex + total}, 0) / sprAnimation._targets.length) + 1
+        }
+    }
+    
     //#endregion
     //============================================================================================= 
     //#region Animation handler for looping
@@ -3238,6 +3295,7 @@ TBSE.init = function() {
     Scene_Battle.prototype.terminate = function() {
         TBSE.scene_battle_terminate.call(this)
         TBSE.clearSpriteReference()
+        TBSE.AnimLoopTracker = {}
     };
 
     Game_Unit.prototype.updateSequencer = function(){
