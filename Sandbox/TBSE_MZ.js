@@ -12,6 +12,7 @@ instead of being spoiled by an auto-play motion. You also need to customize
 the delay of each frame and all the timing on your own.
 
 @author TheoAllen
+//========================================================================
 
 @command divstart
 @text <empty command>
@@ -26,8 +27,8 @@ the delay of each frame and all the timing on your own.
 //========================================================================
 
 @command pose
-@text Pose
-@desc More info: https://github.com/theoallen/RMMZ/wiki/TBSE-Getting-Started#32-creating-idle-motion
+@text Pose - Select Frame
+@desc Select frame
 
 @arg frame
 @text Frame
@@ -53,11 +54,41 @@ the delay of each frame and all the timing on your own.
 @desc Change the used spritesheet used by adding suffix. For example, Actor1_1_2 << added "_2"
 
 //========================================================================
+// * Command - Set Pose
+//========================================================================
+
+@command poserepeat
+@text Pose - Repeat Frame
+@desc Repeat the pose frames automatically
+
+@arg frames
+@text Frames
+@type struct<poseframe>[]
+@default []
+@desc Put the frame to repeat here
+
+@arg repeatmode
+@text Repeat
+@type combo
+@option Indefinitely
+@option Once
+@default Indefinitely
+@desc Set whether to repeat indefinitely or once, or put your own number.
+
+@arg wait
+@text Wait for finish?
+@type boolean
+@on Yes
+@off No
+@default No
+@desc Set whether to wait till finish or animate in parallel. Deadlock if used with repeat indefinitely (duh)
+
+//========================================================================
 // * Command - Move to position (Subject)
 //========================================================================
 
 @command move
-@text Move (Subject/Caster)
+@text Movement - Subject/Caster
 @desc Move the subject battler
 
 @arg to
@@ -107,7 +138,7 @@ the delay of each frame and all the timing on your own.
 //========================================================================
 
 @command moveTarget
-@text Move (Target)
+@text Movement - Target
 @desc Move the target battler
 
 @arg to
@@ -159,7 +190,7 @@ the delay of each frame and all the timing on your own.
 //========================================================================
 
 @command anchorHome
-@text Anchor Position
+@text Position - Set New Home
 @desc Anchor position as the new home position relative to ...
 
 @arg x
@@ -188,7 +219,7 @@ the delay of each frame and all the timing on your own.
 //========================================================================
 
 @command targetAction
-@text Force Action
+@text Target - Force Action
 @desc Force the targets to do an action sequence by calling a common event. 
 
 @arg action
@@ -206,36 +237,69 @@ the delay of each frame and all the timing on your own.
 //========================================================================
 
 @command actionEffect
-@text Action Effect
+@text Action - Invoke Effect
 @desc Invoke item/skill effect to the target battler
+
+//========================================================================
+// * Command - Alter Effect (May be changed for more versatility)
+//========================================================================
+
+@command changeAction
+@text Action - Alter Effect
+@desc Modify item/skill effect carried by the subject battler. This will not invoke the effect to the target
+
+@arg skill
+@text Skill ID
+@desc Change skill ID. Using -1 will not change the skill. Use text input to put -1 as the parameter.
+@type skill
+@default -1
+@min -1
+
+@arg scale
+@text Scale
+@desc Scale the output from the damage formula using a valid floating number. E.g, 1.5. JS Syntax is ok.
+@type text
+@default 1.0
+
+@arg formula
+@text Formula
+@desc Change the skill formula manually
 
 //========================================================================
 // * Command - Projectile
 //========================================================================
 
 @command projectile
-@text Throw Projectile
+@text Action - Throw Projectile
 @desc Throw a projectile to the targets. Action effect is applied as soon as it hits the target or as configured
 
+@arg prjbasic
+@text Basic setting
+@default ---------------
+
 @arg img
+@parent prjbasic
 @text Projectile Image
 @type struct<prjimg>
 @desc Display of the projectile. (Icon, animation, custom image)
-@default {"icon":"0","file":"","animation":"0","spin":"0"}
+@default {"icon":"0","file":"","animation":"0","animfollow":"true","spin":"0","autoAngle":"true"}
 
 @arg duration
+@parent prjbasic
 @type number
 @text Duration
 @default 10
-@desc Travel duration
+@desc Travel duration. JS code is ok!
 
 @arg jump
+@parent prjbasic
 @type number
 @text Jump / Arch power
 @default 0
 @desc Jump / Arch power
 
 @arg type
+@parent prjbasic
 @type select
 @text Movement Type
 @option Normal
@@ -244,17 +308,18 @@ the delay of each frame and all the timing on your own.
 @desc Select movement type. Boomerang means returning to the target afterward with negative arch value
 
 @arg prjadv
-@text ---------------
-@type text
+@text Advanced setting
 @default ---------------
 
 @arg delay
+@parent prjadv
 @type number
 @text Launch Delay
 @default 0
 @desc Wait time before launching the projectile
 
 @arg effect
+@parent prjadv
 @type select
 @text Invoke effect at
 @option Reaching the target
@@ -264,33 +329,38 @@ the delay of each frame and all the timing on your own.
 @desc Invoke effect method you can select.
 
 @arg startpoint
+@parent prjadv
 @text Start Point
 @type struct<projectilepoints>
 @desc Starting point of the projectile
-@default {"X":"0","Y":"0","relativeto":"Self"}
+@default {"x":"0","y":"0","relativeto":"Self","position":"Middle"}
 
 @arg endpoint
+@parent prjadv
 @text End Point
 @type struct<projectilepoints>
 @desc End point of the projectile
-@default {"X":"0","Y":"0","relativeto":"Each Target"}
+@default {"y":"0","x":"0","relativeto":"Each Target","position":"Middle"}
 
 @arg aftimg
+@parent prjadv
 @type struct<aftimg>
 @text Afterimage Effect
-@default {"Rate":"0","opacityEase":"20"}
+@default {"rate":"0","opacityEase":"20","startOpacity":"100","blendmode":"Follow Sprite"}
 @desc Afterimage effect for the projectile
 
 @arg animsetup
+@parent prjadv
 @type struct<animationsetup>
 @text Animation Setup
 @default {"start":"0","ending":"-1","trail":"0"}
 @desc Setup the start/ending animation and trailing animation
 
-@arg movefunc
+@arg movefn
+@parent prjadv
 @type struct<movefunction>
 @text Movement Function
-@default {"y":"Linear","y":"Linear"}
+@default {"x":"Linear","y":"Linear"}
 @desc Movement function
 
 //========================================================================
@@ -298,7 +368,7 @@ the delay of each frame and all the timing on your own.
 //========================================================================
 
 @command forceResult
-@text Force Result
+@text Action - Force Result
 @desc Force the result of the skill/item
 
 @arg opt
@@ -322,36 +392,11 @@ the delay of each frame and all the timing on your own.
 If roll success/fail, it will affect all the next action effect until you reset to the default.
 
 //========================================================================
-// * Command - Alter Effect (May be changed for more versatility)
-//========================================================================
-
-@command changeAction
-@text Alter Effect
-@desc Modify item/skill effect carried by the subject battler. This will not invoke the effect to the target
-
-@arg skill
-@text Skill ID
-@desc Change skill ID. Using -1 will not change the skill. Use text input to put -1 as the parameter.
-@type skill
-@default -1
-@min -1
-
-@arg scale
-@text Scale
-@desc Scale the output from the damage formula using a valid floating number. E.g, 1.5. JS Syntax is ok.
-@type text
-@default 1.0
-
-@arg formula
-@text Formula
-@desc Change the skill formula manually
-
-//========================================================================
 // * Command - Change Target
 //========================================================================
 
 @command changeTarget
-@text Change Target
+@text Action - Change Target
 @desc Change the target scope. Filter field requires a valid JS syntax.
 
 @arg pov
@@ -402,7 +447,7 @@ If roll success/fail, it will affect all the next action effect until you reset 
 //========================================================================
 
 @command state
-@text Change State
+@text Action - Change State
 @desc Change the target state
 
 @arg to
@@ -427,8 +472,79 @@ If roll success/fail, it will affect all the next action effect until you reset 
 @text Operand
 @desc Add or Remove the state?
 
+//========================================================================
+// * Command - Change state
+//========================================================================
+
+@command state
+@text Action - Change HP/MP/TP
+@desc Change the target stats
+
+@arg to
+@text To
+@type select
+@option Targets
+@option Self
+@default Targets
+@desc Target scope
+
+@arg flat
+@text Flat Changes
+
+@arg flathp
+@parent flat
+@text Flat HP
+@type number
+@default 0
+@desc Change HP (Flat) to the target scope. JS code is ok!
+
+@arg flatmp
+@parent flat
+@text Flat MP
+@type number
+@default 0
+@desc Change MP (Flat) to the target scope. JS code is ok!
+
+@arg flattp
+@parent flat
+@text Flat TP
+@type number
+@default 0
+@desc Change TP (Flat) to the target scope. JS code is ok!
+
+@arg rate
+@text Percentage Changes
+
+@arg ratehp
+@parent rate
+@text Rate HP
+@type number
+@default 0
+@desc Change HP (percentage) to the target scope. JS code is ok!
+
+@arg ratemp
+@parent rate
+@text Rate MP
+@type number
+@default 0
+@desc Change MP (percentage) to the target scope. JS code is ok!
+
+@arg ratetp
+@parent rate
+@text Rate TP
+@type number
+@default 0
+@desc Change TP (percentage) to the target scope. JS code is ok!
+
+@arg popup
+@text Shows Popup?
+@type select
+@option Yes
+@option No
+@default Yes
+
 @command div2
-@text ---------< Visuals Effects >-----------
+@text ---------< Visual Effects >-----------
 @desc
 
 //========================================================================
@@ -436,7 +552,7 @@ If roll success/fail, it will affect all the next action effect until you reset 
 //========================================================================
 
 @command anim
-@text Play Animation
+@text Animation - Play
 @desc Show animation on the battlers
 
 @arg id
@@ -451,6 +567,7 @@ If roll success/fail, it will affect all the next action effect until you reset 
 @option Self
 @option Each Target
 @option Center of all targets
+@option Fixed Point
 @default Each Target
 @desc Where to play the animation (Effekseer display type might override this)
 
@@ -460,13 +577,13 @@ If roll success/fail, it will affect all the next action effect until you reset 
 @option Fixed
 @option Follow Sprite
 @default Fixed
-@desc Determine if the animation should follow the battler or fixed in place
+@desc Determine if the animation should follow the battler or fixed in place. Fixed point will always fixed.
 
 @arg layer
 @text Layer
 @type select
 @option Front
-@option Dynamoc (Follow Sprite)
+@option Dynamic (Follow Sprite's Z index)
 @option Back
 @default Front
 @desc Play the animation on the back/front of the sprite
@@ -484,7 +601,7 @@ If roll success/fail, it will affect all the next action effect until you reset 
 //========================================================================
 
 @command visible
-@text Visible
+@text Sprite - Visible
 @desc Toggle the subject to be visible or not
 
 @arg toggle
@@ -500,7 +617,7 @@ If roll success/fail, it will affect all the next action effect until you reset 
 //========================================================================
 
 @command flip
-@text Flip
+@text Sprite - Flip
 @desc Flip the subject battler
 
 @arg toggle
@@ -518,7 +635,7 @@ If roll success/fail, it will affect all the next action effect until you reset 
 //========================================================================
 
 @command blend
-@text Blend Mode
+@text Sprite - Blend Mode
 @desc Set blend mode to the sprite
 
 @arg mode
@@ -531,11 +648,173 @@ If roll success/fail, it will affect all the next action effect until you reset 
 @desc Select the mode
 
 //========================================================================
+// * Command - Scale
+//========================================================================
+
+@command scale
+@text Sprite - Scale/Zoom
+@desc Scale the subject sprite
+
+@arg size
+@type text
+@text Target Size
+@default 1.0
+@desc Use decimal number on this one. JS code is ok!
+
+@arg dur
+@type number
+@text Duration
+@default 35
+@desc Duration to complete the resize. JS code is ok!
+
+@arg fnName
+@type select
+@text Change Function
+@option Linear
+
+@option -------------------
+
+@option Ease OUT (1 - Smooth Linear)
+@option Ease OUT (2 - Smoother Linear)
+@option Ease OUT (3 - Non-Linear)
+@option Ease OUT (4 - Fast)
+@option Ease OUT (5 - Faster)
+@option Ease OUT (6 - Fastest)
+@option Ease OUT (7 - Circular easing)
+@option Ease OUT (8 - Bounce back)
+
+@option -------------------
+
+@option Ease IN (1 - Smooth Linear)
+@option Ease IN (2 - Smoother Linear)
+@option Ease IN (3 - Non-Linear)
+@option Ease IN (4 - Fast)
+@option Ease IN (5 - Faster)
+@option Ease IN (6 - Fastest)
+@option Ease IN (7 - Circular easing)
+@option Ease IN (8 - Bounce back)
+
+@option -------------------
+
+@option Ease IN-OUT (1 - Smooth Linear)
+@option Ease IN-OUT (2 - Smoother Linear)
+@option Ease IN-OUT (3 - Non-Linear)
+@option Ease IN-OUT (4 - Fast)
+@option Ease IN-OUT (5 - Faster)
+@option Ease IN-OUT (6 - Fastest)
+@option Ease IN-OUT (7 - Circular easing)
+@option Ease IN-OUT (8 - Bounce back)
+@default Linear
+@desc Select whether to use linear or easing function
+
+//========================================================================
+// * Command - Rotation
+//========================================================================
+
+@command rotate
+@text Sprite - Rotate
+@desc Rotate the subject sprite
+
+@arg angle
+@type text
+@text Target Angle
+@default 0
+@desc Use degree. JS code is ok!
+
+@arg dur
+@type number
+@text Duration
+@default 35
+@desc Duration to complete the resize. JS code is ok!
+
+@arg reset
+@type boolean
+@on Yes
+@off no
+@default true
+@text Reset on finish?
+@desc Reset to 0 degree on finish.
+
+@arg fnName
+@type select
+@text Change Function
+@option Linear
+
+@option -------------------
+
+@option Ease OUT (1 - Smooth Linear)
+@option Ease OUT (2 - Smoother Linear)
+@option Ease OUT (3 - Non-Linear)
+@option Ease OUT (4 - Fast)
+@option Ease OUT (5 - Faster)
+@option Ease OUT (6 - Fastest)
+@option Ease OUT (7 - Circular easing)
+@option Ease OUT (8 - Bounce back)
+
+@option -------------------
+
+@option Ease IN (1 - Smooth Linear)
+@option Ease IN (2 - Smoother Linear)
+@option Ease IN (3 - Non-Linear)
+@option Ease IN (4 - Fast)
+@option Ease IN (5 - Faster)
+@option Ease IN (6 - Fastest)
+@option Ease IN (7 - Circular easing)
+@option Ease IN (8 - Bounce back)
+
+@option -------------------
+
+@option Ease IN-OUT (1 - Smooth Linear)
+@option Ease IN-OUT (2 - Smoother Linear)
+@option Ease IN-OUT (3 - Non-Linear)
+@option Ease IN-OUT (4 - Fast)
+@option Ease IN-OUT (5 - Faster)
+@option Ease IN-OUT (6 - Fastest)
+@option Ease IN-OUT (7 - Circular easing)
+@option Ease IN-OUT (8 - Bounce back)
+@default Linear
+@desc Select whether to use linear or easing function
+
+//========================================================================
+// * Command - Spinning
+//========================================================================
+
+@command spinStart
+@text Sprite - Spin Start
+@desc Spin the battler
+
+@arg startspd
+@type number
+@text Spin Speed 
+@default 1
+@desc Starting spinning speed. JS code is ok!
+
+@arg accelspd
+@type number
+@text Acceleration
+@default 0
+@desc Acceleration Speed. Use 0 to disable. JS code is ok!
+
+@arg maxspd
+@type number
+@text Max Speed
+@default 0
+@desc Maximum speed. Use it only when you also have acceleration. JS code is ok!
+
+//========================================================================
+// * Command - Spinning
+//========================================================================
+
+@command spinEnd
+@text Sprite - Spin Stop
+@desc Instantly stop spinning and reset the angle
+
+//========================================================================
 // * Command - Afterimage ON
 //========================================================================
 
 @command aftOn
-@text Afterimage ON
+@text Afterimage - ON
 @desc Toggle afterimage effect ON
 
 @arg rate
@@ -573,7 +852,7 @@ If roll success/fail, it will affect all the next action effect until you reset 
 //========================================================================
 
 @command aftOff
-@text Afterimage OFF
+@text Afterimage - OFF
 @desc Toggle afterimage effect OFF
 
 //========================================================================
@@ -581,7 +860,7 @@ If roll success/fail, it will affect all the next action effect until you reset 
 //========================================================================
 
 @command focusOn
-@text Focus Effect ON
+@text Focus Effect - ON
 @desc Enable focus effect. Hide all unaffected battlers.
 
 @arg dim
@@ -615,7 +894,7 @@ If roll success/fail, it will affect all the next action effect until you reset 
 //========================================================================
 
 @command focusOff
-@text Focus Effect OFF
+@text Focus Effect - OFF
 @desc Reset the focus effect to normal
 
 @arg duration
@@ -630,7 +909,7 @@ If roll success/fail, it will affect all the next action effect until you reset 
 //========================================================================
 
 @command checkCollapse
-@text Check Collapse
+@text Collase VFX - Check Collapse
 @desc Perform collapse effect to the targets if the target is defeated
 
 //========================================================================
@@ -639,7 +918,7 @@ If roll success/fail, it will affect all the next action effect until you reset 
 //========================================================================
 
 @command collapse
-@text Perform Collapse
+@text Collase VFX - Perform
 @desc Perform collapse effect on the subject. Used for collapse motion
 
 //========================================================================
@@ -787,18 +1066,18 @@ If roll success/fail, it will affect all the next action effect until you reset 
 */
 
 /*~struct~projectilepoints:
-@param X
+@param x
 @text X-Axis
 @type text
 @text X
-@desc X-axis. You can use a JS code here
+@desc Relative X-axis. You can use a JS code here
 @default 0
 
-@param Y
+@param y
 @text Y-Axis
 @type text
 @text Y
-@desc Y-axis. You can use a JS code here
+@desc Relative Y-axis. You can use a JS code here
 @default 0
 
 @param relativeto
@@ -807,7 +1086,23 @@ If roll success/fail, it will affect all the next action effect until you reset 
 @option Each Target
 @option Center of all targets
 @option Self
+@option Exact Point
 @default Each target
+@desc Pick the target point
+
+@param position
+@type select
+@text Position
+@option Top-Left
+@option Top-Mid
+@option Top-Right
+@option Mid-Left
+@option Middle
+@option Mid-Right
+@option Bottom-Left
+@option Bottom-Mid
+@option Bottom-Right
+@desc
 */
 
 /*~struct~prjimg:
@@ -830,15 +1125,31 @@ If roll success/fail, it will affect all the next action effect until you reset 
 @default 0
 @desc Animation effect that is played in loop
 
+@param animfollow
+@type boolean
+@text Follow Rotation?
+@on Yes
+@off No
+@default true
+@desc Enable the animation rotation to follow the projectile rotation.
+
 @param spin
 @type number
 @text Spin speed
 @default 0
-@desc Spinning speed of the projectile
+@desc Spinning speed of the projectile (Doesn't work together with auto angle)
+
+@param autoAngle
+@text Auto Rotation?
+@type boolean
+@on Yes
+@off No
+@default false
+@desc Angle follow projectile trajectory. Enable auto rotation (Does not work together with spin)
 */
 
 /*~struct~aftimg:
-@param Rate
+@param rate
 @type number
 @text Rate
 @default 0
@@ -849,6 +1160,25 @@ If roll success/fail, it will affect all the next action effect until you reset 
 @type number
 @default 20
 @desc Bigger number = faster fading 
+
+@param startOpacity
+@text Starting Opacity (%)
+@type number
+@min 1
+@max 100
+@default 100
+@desc Starting opacity at percentage. 100 = full
+
+@param blendmode
+@text Blend Mode
+@type select
+@option Follow Sprite
+@option Normal
+@option Add
+@option Sub
+@default Follow Sprite
+@desc Select blend mode.
+
 */
 
 /*~struct~movefunction:
@@ -954,10 +1284,35 @@ If roll success/fail, it will affect all the next action effect until you reset 
 @desc Trailing animation that the projectile left on its path
 */
 
+/*~struct~poseframe:
+@param frame
+@text Frame
+@type number
+@default 0
+@min 0
+@desc Which frame you want to pick?
+
+@param wait
+@text Wait
+@type number
+@default 5
+@min 1
+@desc How long (in frames) you want the battler to stay in that pose.
+
+@param suffix
+@text Suffix
+@type combo
+@option _2
+@option _3
+@option _4
+@option _5
+@desc Change the used spritesheet used by adding suffix. For example, Actor1_1_2 << added "_2"
+*/
+
 const TBSE = {}
 TBSE.init = function() {
     this._pluginName = document.currentScript.src.match(/.+\/(.+)\.js/)[1]
-    this._version = '0.1.220102'  // <Major>.<Minor>.<YYMMDD>
+    this._version = '0.1.220106'  // <Major>.<Minor>.<YYMMDD>
 
     this._addons = []           // Store addons name
     this._battlerSprites = {}   // Store battler sprites
@@ -1134,6 +1489,7 @@ TBSE.init = function() {
         return true;
     }
 
+    //#endregion
     //============================================================================================
 
     //============================================================================================
@@ -1326,9 +1682,26 @@ TBSE.init = function() {
 
     // Manual pose sequence
     cmd.pose = function(args){
+        this._repeatFrames = null // Delete repeat frames
         this.sequencer()._animCell = Number(args.frame);
         this.sequencer()._suffix = args.suffix
         args.interpreter.wait(args.wait);
+    }
+
+    cmd.poserepeat = function(args){
+        const obj = {
+            list: JSON.parse(args.frames).map(o => JSON.parse(o)),
+            index: -1,
+            delay: 0,
+        }
+        obj.max = args.repeatmode === "Indefinitely" ? 
+            Infinity : 
+            (args.repeatmode === "Once" ? obj.list.length : TBSE.evalNumber(args.repeatmode) * obj.list.length)
+        
+        this.sequencer()._repeatFrames = obj
+        if(args.wait === "true"){
+            args.interpreter._waitMode = "repeatFrame"
+        }
     }
 
     // Move command
@@ -1344,12 +1717,12 @@ TBSE.init = function() {
             case "Target":
                 const seq = this.sequencer()
                 const targets = seq._targetArray.length > 0 ? seq._targetArray : TBSE._affectedBattlers
-                targX += targets.reduce((total, trg)=>{ return trg.sprite().x + total}, 0) / targets.length
-                targY += targets.reduce((total, trg)=>{ return trg.sprite().y + total}, 0) / targets.length
+                targX += targets.reduce((total, trg)=>{ return trg.sprite()._realX + total}, 0) / targets.length
+                targY += targets.reduce((total, trg)=>{ return trg.sprite()._realY + total}, 0) / targets.length
                 break;
             case "Slide":
-                targX += spr.x;
-                targY += spr.y;
+                targX += spr._realX;
+                targY += spr._realY;
                 break;
             case "Home":
                 targX += this.homePos().x;
@@ -1361,7 +1734,7 @@ TBSE.init = function() {
 
     // Move command (target)
     cmd.moveTarget = function(args){
-        args.movefn = JSON.parse(args.movefn)
+        args.movefn = (typeof args.movefn === "string" ? JSON.parse(args.movefn) : args.movefn)
         const seq = this.sequencer()
         // Individual
         if(args.scope == "Individual"){
@@ -1371,12 +1744,12 @@ TBSE.init = function() {
                 let targY = TBSE.evalNumber.call(this, args.y)
                 switch(args.to){
                     case "Subject":
-                        targX += this.sprite().x
-                        targY += this.sprite().y
+                        targX += this.sprite()._realX
+                        targY += this.sprite()._realY
                         break;
                     case "Slide":
-                        targX += spr.x;
-                        targY += spr.y;
+                        targX += spr._realX;
+                        targY += spr._realY;
                         break;
                     case "Home":
                         targX += t.homePos().x;
@@ -1389,16 +1762,16 @@ TBSE.init = function() {
         // Center Mass
         }else{
             const allTarget = seq._targetArray
-            const centerX = allTarget.reduce((total, t) => { return t.sprite().x + total }, 0) / allTarget.length
-            const centerY = allTarget.reduce((total, t) => { return t.sprite().y + total }, 0) / allTarget.length
+            const centerX = allTarget.reduce((total, t) => { return t.sprite()._realX + total }, 0) / allTarget.length
+            const centerY = allTarget.reduce((total, t) => { return t.sprite()._realY + total }, 0) / allTarget.length
 
             let targX = TBSE.evalNumber.call(this, args.x)
             let targY = TBSE.evalNumber.call(this, args.y)
 
             switch(args.to){
                 case "Subject":
-                    targX += this.sprite().x
-                    targY += this.sprite().y
+                    targX += this.sprite()._realX
+                    targY += this.sprite()._realY
                     break;
                 case "Slide":
                     targX += centerX;
@@ -1419,8 +1792,8 @@ TBSE.init = function() {
                 this._homeY = spr.y + TBSE.evalNumber.call(this, args.y)
                 break;
             case "Targets":
-                this._homeX = targets.reduce((total, trg)=>{ return trg.sprite().x + total}, 0) + TBSE.evalNumber.call(this, args.x)
-                this._homeY = targets.reduce((total, trg)=>{ return trg.sprite().y + total}, 0) + TBSE.evalNumber.call(this, args.y)
+                this._homeX = targets.reduce((total, trg)=>{ return trg.sprite()._realX + total}, 0) + TBSE.evalNumber.call(this, args.x)
+                this._homeY = targets.reduce((total, trg)=>{ return trg.sprite()._realY + total}, 0) + TBSE.evalNumber.call(this, args.y)
                 break;
             case "Screen":
                 this._homeX = TBSE.evalNumber.call(this, args.x)
@@ -1467,7 +1840,7 @@ TBSE.init = function() {
     }
 
     // Apply action effect
-    cmd.actionEffect = function(args){
+    cmd.actionEffect = function(){
         const seq = this.sequencer()
         for(const target of seq._targetArray){
             seq._action.apply(target);
@@ -1799,10 +2172,6 @@ TBSE.init = function() {
     cmd.aftOff = function(){
         this.sequencer()._afterimage = null
     }
-
-    cmd.projectile = function(args){
-        //console.log(args)
-    }
     
     cmd.focusOn = function(args){
         TBSE.Focus.duration = Number(args.duration)
@@ -1864,6 +2233,209 @@ TBSE.init = function() {
                 break;
         }
     }
+
+    cmd.spinStart = function(args){
+        const spinning = {
+            curRotation: this.sprite().sudut * 180 / Math.PI,
+            initSpeed: TBSE.evalNumber.call(this, args.startspd),
+            accel: TBSE.evalNumber.call(this, args.accelspd),
+            max: TBSE.evalNumber.call(this, args.maxspd),
+            fnName: args.fnName
+        }
+        spinning.speed = spinning.initSpeed
+        this.sequencer()._spinning = spinning
+    }
+
+    cmd.spinEnd =  function(){
+        this.sequencer()._spinning = null
+        this.sprite().sudut = 0
+    }
+
+    cmd.rotate = function(args){
+        const rotation = {
+            maxDuration: TBSE.evalNumber.call(this, args.dur),
+            duration: TBSE.evalNumber.call(this, args.dur),
+            initRotation: this.sprite().sudut * 180 / Math.PI,
+            targetRotation: TBSE.evalNumber.call(this, args.angle),
+            reset: args.reset === "true",
+            fnName: args.fnName
+        }
+        this.sequencer()._rotation = rotation
+    }
+
+    cmd.scale = function(args){
+        const scaling = {
+            maxDuration: TBSE.evalNumber.call(this, args.dur),
+            duration: TBSE.evalNumber.call(this, args.dur),
+            initValue: (this.sprite().scale.x + this.sprite().scale.y) / 2,
+            targetValue: TBSE.evalNumber.call(this, args.size),
+            reset: args.reset === "true",
+            fnName: args.fnName
+        }
+        this.sequencer()._scaling = scaling
+    }
+
+    cmd.projectile = function(args){
+        const opt = Object.assign({}, args)
+
+        //console.log(opt)
+
+        // Parse object
+        opt.aftimg = JSON.parse(args.aftimg)
+        opt.animsetup = JSON.parse(args.animsetup)
+        opt.img = JSON.parse(args.img)
+        opt.startpoint = JSON.parse(args.startpoint)
+        opt.endpoint = JSON.parse(args.endpoint)
+        opt.movefn = JSON.parse(args.movefn)
+        opt.user = this
+        opt.itemInUse = JsonEx.makeDeepCopy(this.sequencer()._itemInUse)
+
+        // Interpret number
+        opt.duration = TBSE.evalNumber.call(this, args.duration)
+        opt.jump = TBSE.evalNumber.call(this, args.jump)
+        opt.delay = TBSE.evalNumber.call(this, args.delay)
+
+        // {"y":"0","x":"0","relativeto":"Each Target","position":"Middle"}
+        opt.startpoint.x = TBSE.evalNumber.call(this, opt.startpoint.x)
+        opt.startpoint.y = TBSE.evalNumber.call(this, opt.startpoint.y)
+
+        // {"y":"0","x":"0","relativeto":"Each Target","position":"Middle"}
+        opt.endpoint.x = TBSE.evalNumber.call(this, opt.endpoint.x)
+        opt.endpoint.y = TBSE.evalNumber.call(this, opt.endpoint.y)
+
+        // {"icon":"0","file":"","animation":"0","animfollow":"true","spin":"0","autoAngle":"true"}
+        opt.img.icon = Number(opt.img.icon)
+        opt.img.animation = Number(opt.img.animation)
+        opt.img.spin = Number(opt.img.spin)
+
+        // {"rate":"0","opacityEase":"20", "startOpacity": "100", "blendmode": "Normal"}
+        opt.aftimg.rate = Number(opt.aftimg.rate)
+        opt.aftimg.opacityEase = Number(opt.aftimg.opacityEase)
+        opt.aftimg.startOpacity = Number(opt.aftimg.startOpacity)
+
+        // {"start":"0","ending":"-1","trail":"0"}
+        opt.animsetup.start = Number(opt.animsetup.start)
+        opt.animsetup.ending = Number(opt.animsetup.ending)
+        opt.animsetup.trail = Number(opt.animsetup.trail)
+
+        const sprList = []
+        sprList.push = function(e) {
+            Array.prototype.push.call(this, e)
+            e.setup(opt)
+        }
+        let spr;
+
+        const determineTarget = (sprPrj) => {
+            sprPrj._invokeTargets = [...this.sequencer()._targetArray]
+            switch(opt.endpoint.relativeto){
+                case "Center of all targets":
+                    sprPrj._targets = [...this.sequencer()._targetArray]
+                    break;
+                case "Self":
+                    sprPrj._targets = [this]
+                    break;
+                case "Fixed Point":
+                    sprPrj._target = [new Point()]
+                    break;
+            }
+            sprPrj._targets.position = opt.endpoint.position
+            sprPrj._targets.x = opt.endpoint.x
+            sprPrj._targets.y = opt.endpoint.y
+            sprPrj.setup(opt)
+        }
+
+        // From each target to each target makes this code convoluted :/
+        switch(opt.startpoint.relativeto){
+            case "Each Target":
+                for(const t of this.sequencer()._targetArray){
+                    // This is dumb actually
+                    if(opt.endpoint.relativeto == "Each Target"){
+                        for(const trg of this.sequencer()._targetArray){
+                            const spr = new TBSE.Projectile()
+                            spr._start = [t]
+                            spr._start.position = opt.startpoint.position
+
+                            spr._invokeTargets = [trg]
+                            spr._targets = [trg]
+                            spr._targets.position = opt.endpoint.position
+                            spr._targets.x = opt.endpoint.x
+                            spr._targets.y = opt.endpoint.y
+                            sprList.push(spr)
+                        }
+                    }else{
+                        const spr = new TBSE.Projectile()
+                        spr._start = [t]
+                        spr._start.position = opt.startpoint.position
+                        spr._start.x = opt.startpoint.x
+                        spr._start.y = opt.startpoint.y
+                        determineTarget(spr)
+                        sprList.push(spr)
+                    }
+                }
+                break;
+            case "Center of all targets":
+                if(opt.endpoint.relativeto == "Each Target"){
+                    for(const trg of this.sequencer()._targetArray){
+                        const spr = new TBSE.Projectile()
+                        spr._start = [...this.sequencer()._targetArray]
+                        spr._start.position = opt.startpoint.position
+
+                        spr._invokeTargets = [trg]
+                        spr._targets = [trg]
+                        spr._targets.position = opt.endpoint.position
+                        spr._targets.x = opt.endpoint.x
+                        spr._targets.y = opt.endpoint.y
+                        sprList.push(spr)
+                    }
+                }else{
+                    spr = new TBSE.Projectile()
+                    spr._start = [...this.sequencer()._targetArray]
+                }
+                break;
+            case "Self":
+                if(opt.endpoint.relativeto == "Each Target"){
+                    for(const trg of this.sequencer()._targetArray){
+                        const spr = new TBSE.Projectile()
+                        spr._start = [this]
+                        spr._start.position = opt.startpoint.position
+
+                        spr._invokeTargets = [trg]
+                        spr._targets = [trg]
+                        spr._targets.position = opt.endpoint.position
+                        sprList.push(spr)
+                    }
+                }else{
+                    spr = new TBSE.Projectile()
+                    spr._start = [this]
+                }
+                break;
+            case "Fixed Point":
+                if(opt.endpoint.relativeto == "Each Target"){
+                    for(const trg of this.sequencer()._targetArray){
+                        const spr = new TBSE.Projectile()
+                        spr._start = [new Point()]
+                        spr._start.position = opt.startpoint.position
+
+                        spr._invokeTargets = [trg]
+                        spr._targets = [trg]
+                        spr._targets.position = opt.endpoint.position
+                        sprList.push(spr)
+                    }
+                }else{
+                    spr = new TBSE.Projectile()
+                    spr._start = [new Point()]
+                }
+                break;
+        }
+        if(spr){
+            spr._start.position = opt.startpoint.position
+            spr._start.x = opt.startpoint.x
+            spr._start.y = opt.startpoint.y
+            determineTarget(spr)
+            sprList.push(spr)
+        }
+        TBSE.Projectile._queue = [...TBSE.Projectile._queue, ...sprList]
+    }
     //#endregion
     //=============================================================================================
 
@@ -1892,8 +2464,12 @@ TBSE.init = function() {
             this._originalItemUse = null                        // Store the original item use
             this._victims = []                                  // Record All target victims (not necessarily a victim, it just a funny variable name)
             this._flip = TBSE.defaultFlip(this.dataBattler())   // Determine if the battler image is flipped
-            this._afterimage = null                             // Afterimage
-            this._blendMode = 0
+            this._blendMode = 0                                 // Store the blend mode
+            this._afterimage = null                             // Store the afterimage data
+            this._repeatFrames = null                           // Store the repeated frames
+            this._spinning = null                               // Store the spinning handler
+            this._rotation = null                               // Handles rotation
+            this._scaling = null                                // Store scaling
         }
 
         battler(){
@@ -1906,6 +2482,68 @@ TBSE.init = function() {
 
         update(){
             this._interpreter.update()
+            if(this._repeatFrames && this._repeatFrames.delay-- <= 0){
+                this.updateRepeatedFrames()
+            }
+            if(this._spinning){
+                this.updateSpin()
+            }
+            if(this._rotation && this._rotation.duration-- > 0){
+                this.updateRotating()
+            }
+            if(this._scaling && this._scaling.duration-- > 0) {
+                this.updateScaling()
+            }
+        }
+
+        updateScaling(){
+            const tMax = this._scaling.maxDuration
+            const t = tMax - this._scaling.duration
+            const init = this._scaling.initValue
+            const target = this._scaling.targetValue
+            const fn = this._scaling.fnName
+            const scale = TBSE.Easings.fn(init, target, t, tMax, fn)
+            console.log(scale)
+            this.battler().sprite().scale.x = scale
+            this.battler().sprite().scale.y = scale
+            if(this._scaling.duration <= 0){
+                this._scaling = null
+            }
+        }
+
+        updateRepeatedFrames(){
+            this._repeatFrames.index += 1
+            if(this._repeatFrames.index >= this._repeatFrames.max){
+                this._repeatFrames = null
+                return
+            }
+            const list = this._repeatFrames.list[this._repeatFrames.index % this._repeatFrames.list.length]
+            this._repeatFrames.delay = list.wait
+            this._animCell = list.frame
+            this._suffix = list.suffix
+        }
+
+        updateSpin(){
+            this._spinning.curRotation += this._spinning.speed
+            this._spinning.curRotation %= 360
+            this._spinning.speed = (this._spinning.speed + this._spinning.accel).clamp(this._spinning.initSpeed, this._spinning.max)
+            this.battler().sprite().sudut = (this._spinning.curRotation * Math.PI) / 180
+        }
+
+        updateRotating(){
+            const tMax = this._rotation.maxDuration
+            const t = tMax - this._rotation.duration
+            const initR = this._rotation.initRotation
+            const trgR = this._rotation.targetRotation
+            const fn = this._rotation.fnName
+            const curRotation = TBSE.Easings.fn(initR, trgR, t, tMax, fn)
+            this.battler().sprite().sudut = (curRotation * Math.PI) / 180
+            if(this._rotation.duration <= 0){
+                if(this._rotation.reset){
+                    this.battler().sprite().sudut = 0
+                }
+                this._rotation = null
+            }
         }
 
         // Prepare for action
@@ -2116,6 +2754,13 @@ TBSE.init = function() {
             this._phaseName = phaseName;
         }
 
+        updateWaitMode(){
+            if(this._waitMode === "repeatFrame"){
+                return !!this.battler().sequencer()._repeatFrames
+            }
+            return Game_Interpreter.prototype.updateWaitMode.call(this)
+        }
+
         battler(){
             if(this._isActor){
                 return $gameActors.actor(this._battlerID)
@@ -2195,7 +2840,7 @@ TBSE.init = function() {
         }
 
         item(){
-            return this.subject().sequencer()._itemInUse
+            return !!this._itemInUse ? this._itemInUse : this.subject().sequencer()._itemInUse
         }
 
         isSkill(){
@@ -2561,8 +3206,8 @@ TBSE.init = function() {
         this._tbseMoveDuration = 0;         // Current duration (count down)
         this._maxDuration = 0;              // Maximum duration
         this._jumpPower = 0;                // Jump force
-        this._displayX = 0;                 // Sprite current display X
-        this._displayY = 0;                 // Sprite current display Y
+        this._realX = 0;                    // Sprite current display X
+        this._realY = 0;                    // Sprite current display Y
         this._targX = 0;                    // Target X axis
         this._targY = 0;                    // Target Y axis
         this._oriX = 0;                     // Original X before moving
@@ -2571,10 +3216,25 @@ TBSE.init = function() {
 
     TBSE.spriteBattler.setHome = sb.setHome
     sb.setHome = function(x, y) {
-        this._displayX = x
-        this._displayY = y
+        this._realX = x
+        this._realY = y
         TBSE.spriteBattler.setHome.call(this, x, y)
     };
+
+    // Redirect rotation because different way to handle sprite
+    // sudut is ID term for angle, to avoid name clash
+    Object.defineProperty(sb, "sudut", {
+        get: function(){
+            return this._mainSprite ? this._mainSprite.rotation : this.rotation
+        },
+        set: function(value){
+            if(this._mainSprite) 
+                this._mainSprite.rotation = value
+            else
+                this.rotation = value
+        },
+        configurable: false,
+    })
 
     // Overwrite update visibility
     sb.updateVisibility = function() {
@@ -2618,7 +3278,7 @@ TBSE.init = function() {
     }
 
     sb.zFormula = function(){
-        return this._displayY * 2
+        return this._realY * 2
     }
     // Fadein
     sb.startFade = function(mode, dur, fn = "Linear"){
@@ -2633,19 +3293,15 @@ TBSE.init = function() {
     // Overwrite update position
     sb.updatePosition = function() {
         if (this._tbseMoveDuration > 0) {
-            const time = this._maxDuration - this._tbseMoveDuration
-            this._displayX = TBSE.Easings.fn(this._oriX, this._targX, time, this._maxDuration, this._fnX)
-            this._displayY = TBSE.Easings.fn(this._oriY, this._targY, time, this._maxDuration, this._fnY)
             this._tbseMoveDuration -= 1;
-            if (this._tbseMoveDuration === 0){
-                this._displayX = this._targX;
-                this._displayY = this._targY;
-            }
+            const time = this._maxDuration - this._tbseMoveDuration
+            this._realX = TBSE.Easings.fn(this._oriX, this._targX, time, this._maxDuration, this._fnX)
+            this._realY = TBSE.Easings.fn(this._oriY, this._targY, time, this._maxDuration, this._fnY)
         }
         // Offset is preserved for the default move function (step forward for selecting)
         // Home position is not used
-        this.x = this._displayX + this._offsetX;
-        this.y = this._displayY + this._offsetY - this.jumpHeight();
+        this.x = this._realX + this._offsetX;
+        this.y = this._realY + this._offsetY - this.jumpHeight();
     };
 
     // It is possible to use a different function, for example, if you want to use easing movement
@@ -2654,8 +3310,8 @@ TBSE.init = function() {
         this._jumpPower = jump;
         this._targX = x;
         this._targY = y;
-        this._oriX = this._displayX;
-        this._oriY = this._displayY;
+        this._oriX = this._realX;
+        this._oriY = this._realY;
         this._tbseMoveDuration = duration;
         this._fnX = fnX;
         this._fnY = fnY;
@@ -2696,8 +3352,7 @@ TBSE.init = function() {
         }
     
         generateAfterimage(){
-            const battler = this.ref._battler
-            const aftOption = !!battler ? battler.sequencer()._afterimage : null
+            const aftOption = this.aftOption()
             if (!!aftOption && this.counter % aftOption.rate === 0){
                 this.counter = 0
                 const aftimg = new TBSE.Afterimage(this.ref, aftOption)
@@ -2708,6 +3363,11 @@ TBSE.init = function() {
                     ref: this.ref
                 })
             }
+        }
+
+        aftOption(){
+            const battler = this.ref._battler
+            return !!battler ? battler.sequencer()._afterimage : null
         }
     }
 
@@ -2730,11 +3390,12 @@ TBSE.init = function() {
             this.opacity = sprObj.opacity * (options.startOpacity / 100)
             this.anchor.x = sprObj.anchor.x
             this.anchor.y = sprObj.anchor.y
-            this.scale.x = sprObj.scale.x
-            this.scale.y = sprObj.scale.y
+            this.scale.x = isActor ? sprObj.parent.scale.x : sprObj.scale.x
+            this.scale.y = isActor ? sprObj.parent.scale.y : sprObj.scale.y
+            this.rotation = sprObj.rotation
             this.blendMode = options.blendMode === -1 ? sprObj.blendMode : options.blendMode
             this.x = isActor ? sprObj.parent.x : sprObj.x
-            this.y = isActor ? sprObj.parent.y : sprObj.y
+            this.y = isActor ? sprObj.parent.y + (sprObj.y * this.scale.y) : sprObj.y
             const frame = sprObj._frame
             this.setFrame(frame.x, frame.y, frame.width, frame.height)
         }
@@ -2762,11 +3423,12 @@ TBSE.init = function() {
             TBSE._battlerSprites[battler.battlerKey()] = this;
         }
     };
-    
+
     // Inject afterimage handler
     TBSE.spriteActor.createMainSpr = sa.createMainSprite
     sa.createMainSprite = function() {
         TBSE.spriteActor.createMainSpr.call(this)
+        this._mainSprite.anchor.y = 0.5 // Rewrite anchor for spinning
         this._afterimages = new TBSE.Afterimages(this)
     };
 
@@ -2785,6 +3447,9 @@ TBSE.init = function() {
 
     sa.updateTBSE = function(){
         sb.updateTBSE.call(this)
+        // Asynchronous handler
+        if(this._mainSprite.bitmap.height > 0)
+            this._mainSprite.y = -(this._mainSprite.height/2) //* this.scale.y
         this._afterimages.update()
         this._mainSprite.blendMode = this._battler.sequencer()._blendMode
     }
@@ -2819,6 +3484,7 @@ TBSE.init = function() {
     TBSE.spriteEnemy.initMembers = se.initMembers
     se.initMembers = function() {
         TBSE.spriteEnemy.initMembers.call(this)
+        this.anchor.y = 0.5 // For spinning
         this._afterimages = new TBSE.Afterimages(this)
     };
 
@@ -2849,15 +3515,22 @@ TBSE.init = function() {
         }
     };
 
+    TBSE.spriteEnemy.updatePos = se.updatePosition
+    se.updatePosition = function() {
+        TBSE.spriteEnemy.updatePos.call(this)
+        this.y -= this.height/2
+    };
+
     se.updateTBSE = function(){
         sb.updateTBSE.call(this)
+        // this.rotation += 0.01
         this._afterimages.update()
         this.blendMode = this._battler.sequencer()._blendMode
     }
 
     //#endregion
     //============================================================================================= 
-
+    //#region Focus
     TBSE.Focus = {
         Sprite: class extends ScreenSprite{
             constructor(){
@@ -2883,6 +3556,318 @@ TBSE.init = function() {
         targetOp: 180,
         fnName: "Linear",
     }
+    //#endregion
+    //============================================================================================= 
+    //#region Projectile
+
+    /*
+    aftimg:
+    Rate: "0"
+    opacityEase: "20"
+
+    animsetup:
+    ending: "-1"
+    start: "0"
+    trail: "0"
+
+    delay: "0"
+    duration: "10"
+    effect: "Reaching the target"
+
+    endpoint:
+    X: "0"
+    Y: "0"
+    relativeto: "Each Target"
+
+    img:
+    animation: "0"
+    file: ""
+    icon: "0"
+    spin: "0"
+
+    jump: "0"
+    movefn:
+    x: "Linear"
+    y: "Linear"
+
+    startpoint:
+    X: "0"
+    Y: "0"
+    relativeto: "Self"
+
+    type: "Normal"
+    */
+    TBSE.Projectile = class extends Sprite{
+        constructor(){
+            super(...arguments)
+            this.init()
+        }
+
+        init(){
+            this._returning = false
+            this._piercing = false // Later
+        }
+
+        setup(options){
+            this._opt = options
+            this._delay = options.delay
+            this.loadImage()
+            this.loadAnimation()
+            this.loadAfterimage()
+            this.updateDelay()
+            if(this._opt.effect === "The beginning"){
+                this.invokeEffect()
+            }
+        }
+
+        loadImage(){
+            this.anchor.x = 0.5
+            this.anchor.y = 0.5
+            // Image takes priority
+            if(this._opt.img.file.length > 0){
+                // TODO
+            }else if(this._opt.img.icon > 0){
+                const iconIndex = this._opt.img.icon
+                const bitmap = ImageManager.loadSystem("IconSet");
+                const pw = ImageManager.iconWidth;
+                const ph = ImageManager.iconHeight;
+                const sx = (iconIndex % 16) * pw;
+                const sy = Math.floor(iconIndex / 16) * ph;
+                this.bitmap = bitmap
+                this.setFrame(sx, sy, pw, ph)                
+            }
+        }
+
+        loadAfterimage(){
+            if(this._opt.aftimg.rate > 0){
+                this._afterimages = new TBSE.Afterimages(this)
+                this._afterimages.aftOption = function() {
+                    this._opt.aftimg
+                }.bind(this)
+            }
+        }
+
+        loadAnimation(){
+            // Load looped animation
+            const animloop = $dataAnimations[this._opt.img.anim]
+            if (animloop){
+                const mv = Spriteset_Base.prototype.isMVAnimation(animloop)
+                this._animloop = new (mv ? TBSE.AnimationLoop_MV : TBSE.AnimationLoop)()
+                this._animloop.setup([this], animloop, false, 0, 0);
+                //this.addChild(sprLoop)
+            }
+        }
+
+        startMove(duration, jump, startTarget, endTargets, onEnd){
+            const point = this.makeTargetPoint(startTarget)
+            this._movement = {
+                maxDuration: duration,
+                duration: duration,
+                jump: jump,
+                startX: point.x,
+                startY: point.y,
+                endtargets: endTargets,
+                onEnd: onEnd
+            }
+        }
+
+        update(){
+            Sprite.prototype.update.call(this)
+            this.updateDelay()
+            this.updateMove()
+            this.updateSpin()
+            if(this._animloop){
+                TBSE.updateZindex(this._animloop)
+            }
+            if(this._afterimages){
+                this._afterimages.update()
+            }
+            //console.log(`${this.x} -- ${this.y}`)
+        }
+
+        updateDelay(){
+            if(this._delay !== null && this._delay-- <= 0){
+                if(this._opt.type === "Boomerang"){
+                    const fnEnd = this.onBoomerangEnding.bind(this)
+                    this.startMove(this._opt.duration, this._opt.jump, this._start, this._targets, fnEnd)
+                }else if(this._opt.type === "Piercing"){ // TODO
+                    const fnEnd = this.onPiercingEnding.bind(this)
+                    this.startMove(this._opt.duration, this._opt.jump, this._start, this._targets, fnEnd)
+                }else{
+                    const fnEnd = this.onEnding.bind(this)
+                    this.startMove(this._opt.duration, this._opt.jump, this._start, this._targets, fnEnd)
+                }
+                this._delay = null                
+            }
+        }
+
+        updateSpin(){
+            if(this._opt){
+                this.rotation += (this._opt.img.spin * Math.PI) / 180
+            }
+        }
+
+        updateMove(){
+            this.zIndex = this.y * 2
+            if(this._movement && this._movement.duration > 0){
+                const t = this._movement.maxDuration - this._movement.duration
+                this._movement.duration -= 1;
+
+                // console.log(`${this.x} -- ${this.y}`)
+                // Homing to the target
+                const point = this.makeTargetPoint(this._movement.endtargets)
+                const trgx = point.x
+                const trgy = point.y
+
+                const lastx = this.x
+                const lasty = this.y
+
+                this.x = TBSE.Easings.fn(this._movement.startX, trgx, t, this._movement.maxDuration, this._opt.movefn.x)
+                this.y = TBSE.Easings.fn(this._movement.startY, trgy, t, this._movement.maxDuration, this._opt.movefn.y) + this.jumpHeight()
+
+                if(this._opt.img.autoAngle === "true"){
+                    const diffx = this.x - lastx
+                    const diffy = this.y - lasty
+                    const angle = Math.atan(diffy / diffx)
+                    this.rotation = -angle 
+                }
+
+                this.createTrailingAnimation()
+
+                if(this._movement.duration === 0){
+                    this._movement.onEnd()
+                }
+            }
+        }
+
+        makeTargetPoint(targets){
+            targets.x ||= 0
+            targets.y ||= 0
+            targets.position ||= "Middle"
+
+            const x = targets.reduce((total, t) => {
+                if(t.sprite){
+                    const spr = t.sprite()
+                    switch(targets.position){
+                        case "Top-Left":
+                        case "Mid-Left":
+                        case "Bottom-Left":
+                            return 0 + spr._realX + total
+                            
+                        case "Top-Mid":
+                        case "Middle":
+                        case "Bottom-Mid":
+                            return (spr.width/2) + spr._realX + total
+                            
+                        case "Top-Right":
+                        case "Mid-Right":
+                        case "Bottom-Right":
+                            return spr.width + spr._realX + total
+                    }
+                }else{
+                    return t.x + targets.x + total
+                }
+            }, 0) / targets.length
+
+            const y = targets.reduce((total, t) => {
+                if(t.sprite){
+                    const spr = t.sprite()
+                    switch(targets.position){
+                        case "Top-Left":
+                        case "Top-Mid":
+                        case "Top-Right":
+                            return -spr.height + spr._realY + total
+                            
+                        case "Mid-Left":
+                        case "Middle":
+                        case "Mid-Right":
+                            return -(spr.height/2) + spr._realY + total
+                            
+                        case "Bottom-Left":
+                        case "Bottom-Mid":
+                        case "Bottom-Right":
+                            return 0 + spr._realY + total
+                    }
+                }else{
+                    return t.y + total
+                }
+            }, 0) / targets.length
+            return new Point(x, y)
+        }
+
+        jumpHeight(){
+            if (this._movement.duration === 0) {
+                return 0
+            }
+            const time = this._movement.maxDuration - this._movement.duration
+            const gravity = this._movement.jump/(this._movement.maxDuration/2);
+            return (this._movement.jump * time) - (gravity * time * (time + 1) / 2);
+        }
+
+        invokeEffect(){
+            for(const target of this._invokeTargets){
+
+                // Creating a new action means it may skip force result. Will fix that later if someone complains :v
+                const action = new TBSE.Action(this._opt.user)
+                action._itemInUse = this._opt.itemInUse
+                action.apply(target);
+                if (target.shouldPopupDamage()){
+                    target.startDamagePopup();
+                    const tseq = target.sequencer()
+                    if (tseq.canPlayEvadeMotion()){
+                        tseq._targetArray = [this._opt.user]
+                        tseq.motionEvade()
+                    }else if (tseq.canPlayDamagedMotion()){
+                        tseq._targetArray = [this._opt.user]
+                        tseq.motionDamaged()
+                    }
+                }
+            }
+            if(this._opt.user.shouldPopupDamage()){
+                this._opt.user.startDamagePopup();
+            }
+        }
+
+        createTrailingAnimation(){
+            if(this._opt.animsetup.trail > 0){
+                // TODO
+            }
+        }
+
+        onBoomerangEnding(){
+            this._returning = true
+            if(this._opt.effect === "Reaching the target"){
+                this.invokeEffect()
+            }
+            this.startMove(this._opt.duration, this._opt.jump * -1, this._targets, this._start, this.onEnding.bind(this))
+        }
+
+        onPiercingEnding(){
+            // TODO
+        }
+
+        onEnding(){
+            if(!this._returning && this._opt.effect === "Reaching the target"){
+                this.invokeEffect()
+                const arr = this._targets
+                arr.fixed = true          
+
+                const animsetup = this._opt.animsetup.ending
+                if(animsetup == -1){
+                    $gameTemp.requestAnimation(arr, this._opt.itemInUse.animation_id, false);
+                }else if(animsetup > 0){
+                    $gameTemp.requestAnimation(arr, animsetup, false);
+                }
+            }            
+            this._movement = null
+            TBSE.Projectile._expired.push(this)
+        }
+    }
+
+    TBSE.Projectile._queue = []
+    TBSE.Projectile._expired = []
+
+    //#endregion
     //============================================================================================= 
     //#region Spriteset_Battle
     //---------------------------------------------------------------------------------------------
@@ -2914,6 +3899,7 @@ TBSE.init = function() {
         return TBSE.sprset.isBusy.call(this) || TBSE.isSequenceBusy();
     };
 
+    // Delete delay
     sset.animationBaseDelay = function() {
         return 0;
     };
@@ -2927,13 +3913,14 @@ TBSE.init = function() {
     sset.update = function() {
         TBSE.sprset.update.call(this)
         this.updateTBSE()
-        this.updateAfterimages()
     };
 
     sset.updateTBSE = function(){
         for(const spr of this._animationSprites){
             TBSE.updateZindex(spr)
         }
+        this.updateAfterimages()
+        this.updateProjectiles()
     }
 
     sset.updateAfterimages = function(){
@@ -2944,6 +3931,23 @@ TBSE.init = function() {
         for(const img of [...TBSE.Afterimages._expiredImg]){
             img.destroy()
             TBSE.Afterimages._expiredImg.remove(img)
+        }
+    }
+
+    sset.updateProjectiles = function(){
+        for(const prj of [...TBSE.Projectile._queue]){
+            this._battleField.addChild(prj)
+            if (prj._animloop){
+                this._battleField.addChild(prj._animloop)
+            }
+            TBSE.Projectile._queue.remove(prj)
+        }
+        for(const prj of [...TBSE.Projectile._expired]){
+            if (prj._animloop){
+                prj._animloop.destroy()
+            }
+            prj.destroy()
+            TBSE.Projectile._expired.remove(prj)
         }
     }
 
@@ -2973,7 +3977,7 @@ TBSE.init = function() {
         const mirror = request.mirror;
         let delay = this.animationBaseDelay();
         const nextDelay = this.animationNextDelay();
-        if (this.isAnimationForEach(animation) && !targets.center) { // Lemme decide if it is center or not, dammit!
+        if (this.isAnimationForEach(animation) && !targets.center) { // Lemme decide if it is center or not
             for (const target of targets) {
                 const arr = [target]
                 arr.fixed = targets.fixed
@@ -3007,12 +4011,22 @@ TBSE.init = function() {
         return targetSprites;
     };
 
+    // Also look for the sprites
+    TBSE.sprset.findTargetSpr = sset.findTargetSprite
+    sset.findTargetSprite = function(target) {
+        const trgSpr = TBSE.sprset.findTargetSpr.call(this, target)
+        if(!!trgSpr === false){
+            return this._battleField.children.find(spr => target === spr)
+        }
+        return trgSpr
+    };
+
     // Center mass
     sset.makeCenterTarget = function(targets){
         const spr = new Sprite()
         spr._trackThis = true 
-        spr.x = targets.reduce((total, trg)=>{ return trg.x + total}, 0) / targets.length
-        spr.y = targets.reduce((total, trg)=>{ return trg.y + total}, 0) / targets.length
+        spr.x = targets.reduce((total, trg)=>{ return (trg._realX ? trg._realX : trg.x) + total}, 0) / targets.length
+        spr.y = targets.reduce((total, trg)=>{ return (trg._realY ? trg._realY : trg.y) + total}, 0) / targets.length
         spr.zIndex = targets.reduce((total, trg)=>{ return trg.zIndex + total}, 0) / targets.length
         this._fixedAnimeHandler.push(spr)
         this._battleField.addChild(spr)
@@ -3030,8 +4044,8 @@ TBSE.init = function() {
         return targets.map(t => {
             const spr = new Sprite()
             spr._trackThis = true
-            spr.x = t.x
-            spr.y = t.y
+            spr.x = t._realX ? t._realX : t.x
+            spr.y = t._realY ? t._realY : t.y
             spr.zIndex = t.zIndex
             spr.setFrame(0, 0, t.width, t.height)
             this._fixedAnimeHandler.push(spr)
@@ -3171,6 +4185,30 @@ TBSE.init = function() {
             }
         }
     }
+
+    // Overwrite to fix the pivot reposition
+    Sprite_AnimationMV.prototype.updatePosition = function() {
+        if (this._animation.position === 3) {
+            this.x = this.parent.width / 2;
+            this.y = this.parent.height / 2;
+        } else if (this._targets.length > 0) {
+            const target = this._targets[0];
+            const parent = target.parent;
+            const grandparent = parent ? parent.parent : null;
+            this.x = target._realX ? target._realX : target.x;
+            this.y = target._realY ? target._realY : target.y;
+            if (this.parent === grandparent) {
+                this.x += parent.x;
+                this.y += parent.y;
+            }
+            if (this._animation.position === 0) {
+                this.y -= target.height;
+            } else if (this._animation.position === 1) {
+                this.y -= target.height / 2;
+            }
+        }
+    };
+
     //#endregion
     //============================================================================================= 
     //#region Counter Handler
@@ -3272,7 +4310,7 @@ TBSE.init = function() {
     //=============================================================================================
 
     //============================================================================================= 
-    // BattleManager
+    //#region BattleManager & Scene
     //---------------------------------------------------------------------------------------------
 
     TBSE.bm = {}
@@ -3308,5 +4346,18 @@ TBSE.init = function() {
             member.updateSequencer()
         }
     }
+    //#endregion
+    //============================================================================================= 
 }
 TBSE.init()
+
+// Sprite_Actor.prototype.moveR = function(x, y){
+//     const lastx = this.x
+//     const lasty = this.y
+//     this.x = lastx + x
+//     this.y = lasty + y
+
+//     const angle = Math.atan(y / x)
+//     console.log(angle)
+//     this._mainSprite.rotation = -angle
+// }
