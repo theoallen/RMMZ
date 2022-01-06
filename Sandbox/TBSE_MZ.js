@@ -1102,6 +1102,7 @@ If roll success/fail, it will affect all the next action effect until you reset 
 @option Bottom-Left
 @option Bottom-Mid
 @option Bottom-Right
+@default Middle
 @desc
 */
 
@@ -1528,7 +1529,7 @@ TBSE.init = function() {
 
     // Check flip
     this.defaultFlip = function(db){
-        return db._defaultFlip ||= db.note.match(TBSE._tagFlip)
+        return db._defaultFlip ||= !!db.note.match(TBSE._tagFlip)
     }
 
     // Idiot proof
@@ -2354,6 +2355,8 @@ TBSE.init = function() {
                             const spr = new TBSE.Projectile()
                             spr._start = [t]
                             spr._start.position = opt.startpoint.position
+                            spr._start.x = opt.startpoint.x
+                            spr._start.y = opt.startpoint.y
 
                             spr._invokeTargets = [trg]
                             spr._targets = [trg]
@@ -3559,44 +3562,6 @@ TBSE.init = function() {
     //#endregion
     //============================================================================================= 
     //#region Projectile
-
-    /*
-    aftimg:
-    Rate: "0"
-    opacityEase: "20"
-
-    animsetup:
-    ending: "-1"
-    start: "0"
-    trail: "0"
-
-    delay: "0"
-    duration: "10"
-    effect: "Reaching the target"
-
-    endpoint:
-    X: "0"
-    Y: "0"
-    relativeto: "Each Target"
-
-    img:
-    animation: "0"
-    file: ""
-    icon: "0"
-    spin: "0"
-
-    jump: "0"
-    movefn:
-    x: "Linear"
-    y: "Linear"
-
-    startpoint:
-    X: "0"
-    Y: "0"
-    relativeto: "Self"
-
-    type: "Normal"
-    */
     TBSE.Projectile = class extends Sprite{
         constructor(){
             super(...arguments)
@@ -3708,12 +3673,11 @@ TBSE.init = function() {
         }
 
         updateMove(){
-            this.zIndex = this.y * 2
+            this.zIndex = Graphics.width * 3
             if(this._movement && this._movement.duration > 0){
                 const t = this._movement.maxDuration - this._movement.duration
                 this._movement.duration -= 1;
 
-                // console.log(`${this.x} -- ${this.y}`)
                 // Homing to the target
                 const point = this.makeTargetPoint(this._movement.endtargets)
                 const trgx = point.x
@@ -3743,8 +3707,8 @@ TBSE.init = function() {
         makeTargetPoint(targets){
             targets.x ||= 0
             targets.y ||= 0
-            targets.position ||= "Middle"
 
+            targets.position ||= "Middle"
             const x = targets.reduce((total, t) => {
                 if(t.sprite){
                     const spr = t.sprite()
@@ -3752,22 +3716,22 @@ TBSE.init = function() {
                         case "Top-Left":
                         case "Mid-Left":
                         case "Bottom-Left":
-                            return 0 + spr._realX + total
+                            return -(spr.width/2) + spr._realX + total
                             
                         case "Top-Mid":
                         case "Middle":
                         case "Bottom-Mid":
-                            return (spr.width/2) + spr._realX + total
+                            return spr._realX + total
                             
                         case "Top-Right":
                         case "Mid-Right":
                         case "Bottom-Right":
-                            return spr.width + spr._realX + total
+                            return (spr.width/2) + spr._realX + total
                     }
                 }else{
-                    return t.x + targets.x + total
+                    return t.x + total
                 }
-            }, 0) / targets.length
+            }, 0) / targets.length + targets.x
 
             const y = targets.reduce((total, t) => {
                 if(t.sprite){
@@ -3786,12 +3750,12 @@ TBSE.init = function() {
                         case "Bottom-Left":
                         case "Bottom-Mid":
                         case "Bottom-Right":
-                            return 0 + spr._realY + total
+                            return spr._realY + total
                     }
                 }else{
                     return t.y + total
                 }
-            }, 0) / targets.length
+            }, 0) / targets.length + targets.y
             return new Point(x, y)
         }
 
@@ -4350,14 +4314,3 @@ TBSE.init = function() {
     //============================================================================================= 
 }
 TBSE.init()
-
-// Sprite_Actor.prototype.moveR = function(x, y){
-//     const lastx = this.x
-//     const lasty = this.y
-//     this.x = lastx + x
-//     this.y = lasty + y
-
-//     const angle = Math.atan(y / x)
-//     console.log(angle)
-//     this._mainSprite.rotation = -angle
-// }
