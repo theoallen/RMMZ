@@ -89,8 +89,6 @@ Theo.AnimControl = function(){
         Theo.AnimControl.updatePosAlias.call(this)
         // just in case
         if(this._animation){
-            x = Theo.AnimControl.getOffsetX(this._animation)
-            console.log(x)
             this.x -= Theo.AnimControl.getOffsetX(this._animation)
             this.y -= Theo.AnimControl.getOffsetY(this._animation)
         }
