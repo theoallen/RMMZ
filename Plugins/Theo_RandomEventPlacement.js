@@ -1,10 +1,10 @@
 /*:
 @target MZ
-@plugindesc v1.0.1 - Random Event Starting Placement (Based on Region ID)
+@plugindesc v1.1 - Random Event Starting Placement (Based on Region ID)
 @author TheoAllen
 @url https://github.com/theoallen/RMMZ/tree/master/Plugins
 @help 
-Version 1.0.1
+Version 1.1
 
 ♦ About:
 Randomly place the event start position based on the region id.
@@ -38,11 +38,15 @@ https://github.com/theoallen/RMMZ/blob/master/README.md
 @text Region ID
 */
 
+/*
+Version 1.1.20220122 - Added a check to see if the tile is already occupied
+*/
+
 var Theo = Theo || {}
 Theo.RandomEventPlacement = function(){
     const $ = Theo.RandomEventPlacement
 
-    $._version = '1.0.0'
+    $._version = '1.1.20220122'
     $._pluginName = document.currentScript.src.match(/.+\/(.+)\.js/)[1]
 
     // Precache map region
@@ -76,6 +80,12 @@ Theo.RandomEventPlacement = function(){
 
     // Array sample
     $.sample = function(){
+        const allChars = [$gamePlayer, ...$gameMap.events()]
+        for(const pos of this){
+            if(allChars.some(c => c.x == pos.x && c.y == pos.y)){
+                this.remove(pos)
+            }
+        }
         return this[Math.floor(Math.random()*this.length)];
     }
 
@@ -103,6 +113,15 @@ Theo.RandomEventPlacement = function(){
             }
         }
     }
+
+    // Reshuffle initial position (because events weren't registered at the start)
+    $.setupEvents = Game_Map.prototype.setupEvents
+    Game_Map.prototype.setupEvents = function() {
+        $.setupEvents.call(this)
+        for(const ev of this.events()){
+            $.checkPlacement.call(ev)
+        }
+    };
 
 }
 Theo.RandomEventPlacement()
