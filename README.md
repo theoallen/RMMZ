@@ -13,7 +13,7 @@ Terms of Use
 
 Note:
 
-This does not mean I will ask the unencypted project of your game. Just the game * 
+This does not mean I will ask the unencypted project of your game. Just the free access to game. I don't play RPG Maker games majority of the time though * 
 
 News
 =====
