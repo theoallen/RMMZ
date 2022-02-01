@@ -161,6 +161,7 @@ Theo.SelectionConsistency = function(){
 	};
 	
 	// use group window if needed.
+	$.scnBattleOnSelectAction = Scene_Battle.prototype.onSelectAction;
 	Scene_Battle.prototype.onSelectAction = function() {
 		const action = BattleManager.inputtingAction();
 		if (!action.needsSelection()) {
@@ -176,10 +177,8 @@ Theo.SelectionConsistency = function(){
 		} else if (action.isForAllEnemies()) {
 			this._groupTargetWindow.setTargetText($._textAllEnemies);
 			this.startGroupTargetSelection();
-		} else if (action.isForOpponent()) {
-			this.startEnemySelection();
 		} else {
-			this.startActorSelection();
+			$.scnBattleOnSelectAction.call(this);
 		}
 	};
 	
