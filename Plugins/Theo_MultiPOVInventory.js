@@ -1,6 +1,6 @@
 /*:
 @target MZ
-@plugindesc v1.0.1 - Multiple Party POV Inventory System
+@plugindesc v1.0.2 - Multiple Party POV Inventory System
 @author TheoAllen
 @url https://github.com/theoallen/RMMZ/tree/master/Plugins
 @help
@@ -63,7 +63,7 @@ plugins. But I don't know.
 var Theo = Theo || {}
 Theo.MultiPOVInv = function(){
     const $ = Theo.MultiPOVInv
-    $._version = '1.0.1'
+    $._version = '1.0.2'
     $._pluginName = document.currentScript.src.match(/.+\/(.+)\.js/)[1]
 
     PluginManager.registerCommand($._pluginName, "save", args => {
@@ -101,17 +101,17 @@ Theo.MultiPOVInv = function(){
 
         loadInventory(merge){
             if(merge){
-                for(const key in Object.keys(this._items)){
+                for(const key of Object.keys(this._items)){
                     const item = $dataItems[key]
                     const sum = ($gameParty._items[key] !== undefined ? $gameParty._items[key] : 0) + this._items[key]
                     $gameParty._items[key] = Math.min(sum, $gameParty.maxItems(item))
                 }
-                for(const key in Object.keys(this._weapons)){
+                for(const key of Object.keys(this._weapons)){
                     const item = $dataWeapons[key]
                     const sum = ($gameParty._weapons[key] !== undefined ? $gameParty._weapons[key] : 0) + this._weapons[key]
                     $gameParty._weapons[key] = Math.min(sum, $gameParty.maxItems(item))
                 }
-                for(const key in Object.keys(this._armors)){
+                for(const key of Object.keys(this._armors)){
                     const item = $dataArmors[key]
                     const sum = ($gameParty._armors[key] !== undefined ? $gameParty._armors[key] : 0) + this._armors[key]
                     $gameParty._armors[key] = Math.min(sum, $gameParty.maxItems(item))
