@@ -1,6 +1,6 @@
 /*:
 @target MZ
-@plugindesc v0.1.xx - Theo's Battle Sequence Engine MZ.
+@plugindesc v0.1.20220225 - Theo's Battle Sequence Engine MZ.
 @help
 TBSE is spritesheet-based animation sequence plugin aiming for a free-frame 
 pick spritesheet animation sequencer. You are encouraged to use any kind 
@@ -127,11 +127,45 @@ the delay of each frame and all the timing on your own.
 @min 0
 @desc Jump power. Higher number, higher jump.
 
-@arg movefn
-@type struct<movefunction>
-@text Movement Function
-@default {"x":"Linear","y":"Linear"}
-@desc Movement function
+@arg fn
+@type select
+@text Function
+@option Linear
+
+@option -------------------
+
+@option Ease OUT (1 - Smooth Linear)
+@option Ease OUT (2 - Smoother Linear)
+@option Ease OUT (3 - Non-Linear)
+@option Ease OUT (4 - Fast)
+@option Ease OUT (5 - Faster)
+@option Ease OUT (6 - Fastest)
+@option Ease OUT (7 - Circular easing)
+@option Ease OUT (8 - Bounce back)
+
+@option -------------------
+
+@option Ease IN (1 - Smooth Linear)
+@option Ease IN (2 - Smoother Linear)
+@option Ease IN (3 - Non-Linear)
+@option Ease IN (4 - Fast)
+@option Ease IN (5 - Faster)
+@option Ease IN (6 - Fastest)
+@option Ease IN (7 - Circular easing)
+@option Ease IN (8 - Bounce back)
+
+@option -------------------
+
+@option Ease IN-OUT (1 - Smooth Linear)
+@option Ease IN-OUT (2 - Smoother Linear)
+@option Ease IN-OUT (3 - Non-Linear)
+@option Ease IN-OUT (4 - Fast)
+@option Ease IN-OUT (5 - Faster)
+@option Ease IN-OUT (6 - Fastest)
+@option Ease IN-OUT (7 - Circular easing)
+@option Ease IN-OUT (8 - Bounce back)
+@default Linear
+@desc Select whether to use linear or easing function
 
 //========================================================================
 // * Command - Move to position (Target)
@@ -184,6 +218,46 @@ the delay of each frame and all the timing on your own.
 @default 0
 @min 0
 @desc Jump power. Higher number, higher jump.
+
+@arg fn
+@type select
+@text Function
+@option Linear
+
+@option -------------------
+
+@option Ease OUT (1 - Smooth Linear)
+@option Ease OUT (2 - Smoother Linear)
+@option Ease OUT (3 - Non-Linear)
+@option Ease OUT (4 - Fast)
+@option Ease OUT (5 - Faster)
+@option Ease OUT (6 - Fastest)
+@option Ease OUT (7 - Circular easing)
+@option Ease OUT (8 - Bounce back)
+
+@option -------------------
+
+@option Ease IN (1 - Smooth Linear)
+@option Ease IN (2 - Smoother Linear)
+@option Ease IN (3 - Non-Linear)
+@option Ease IN (4 - Fast)
+@option Ease IN (5 - Faster)
+@option Ease IN (6 - Fastest)
+@option Ease IN (7 - Circular easing)
+@option Ease IN (8 - Bounce back)
+
+@option -------------------
+
+@option Ease IN-OUT (1 - Smooth Linear)
+@option Ease IN-OUT (2 - Smoother Linear)
+@option Ease IN-OUT (3 - Non-Linear)
+@option Ease IN-OUT (4 - Fast)
+@option Ease IN-OUT (5 - Faster)
+@option Ease IN-OUT (6 - Fastest)
+@option Ease IN-OUT (7 - Circular easing)
+@option Ease IN-OUT (8 - Bounce back)
+@default Linear
+@desc Select whether to use linear or easing function
 
 //========================================================================
 // * Command - Anchor Home
@@ -286,17 +360,17 @@ the delay of each frame and all the timing on your own.
 
 @arg duration
 @parent prjbasic
-@type number
+@type Text
 @text Duration
 @default 10
 @desc Travel duration. JS code is ok!
 
 @arg jump
 @parent prjbasic
-@type number
+@type Text
 @text Jump / Arch power
 @default 0
-@desc Jump / Arch power
+@desc Jump / Arch power. JS code is ok!
 
 @arg type
 @parent prjbasic
@@ -356,12 +430,45 @@ the delay of each frame and all the timing on your own.
 @default {"start":"0","ending":"-1","trail":"0"}
 @desc Setup the start/ending animation and trailing animation
 
-@arg movefn
-@parent prjadv
-@type struct<movefunction>
-@text Movement Function
-@default {"x":"Linear","y":"Linear"}
-@desc Movement function
+@arg fn
+@type select
+@text Function
+@option Linear
+
+@option -------------------
+
+@option Ease OUT (1 - Smooth Linear)
+@option Ease OUT (2 - Smoother Linear)
+@option Ease OUT (3 - Non-Linear)
+@option Ease OUT (4 - Fast)
+@option Ease OUT (5 - Faster)
+@option Ease OUT (6 - Fastest)
+@option Ease OUT (7 - Circular easing)
+@option Ease OUT (8 - Bounce back)
+
+@option -------------------
+
+@option Ease IN (1 - Smooth Linear)
+@option Ease IN (2 - Smoother Linear)
+@option Ease IN (3 - Non-Linear)
+@option Ease IN (4 - Fast)
+@option Ease IN (5 - Faster)
+@option Ease IN (6 - Fastest)
+@option Ease IN (7 - Circular easing)
+@option Ease IN (8 - Bounce back)
+
+@option -------------------
+
+@option Ease IN-OUT (1 - Smooth Linear)
+@option Ease IN-OUT (2 - Smoother Linear)
+@option Ease IN-OUT (3 - Non-Linear)
+@option Ease IN-OUT (4 - Fast)
+@option Ease IN-OUT (5 - Faster)
+@option Ease IN-OUT (6 - Fastest)
+@option Ease IN-OUT (7 - Circular easing)
+@option Ease IN-OUT (8 - Bounce back)
+@default Linear
+@desc Select whether to use linear or easing function
 
 //========================================================================
 // * Command - Force result
@@ -1179,90 +1286,6 @@ If roll success/fail, it will affect all the next action effect until you reset 
 @option Sub
 @default Follow Sprite
 @desc Select blend mode.
-
-*/
-
-/*~struct~movefunction:
-@param x
-@type select
-@text X Function
-@option Linear
-
-@option -------------------
-
-@option Ease OUT (1 - Smooth Linear)
-@option Ease OUT (2 - Smoother Linear)
-@option Ease OUT (3 - Non-Linear)
-@option Ease OUT (4 - Fast)
-@option Ease OUT (5 - Faster)
-@option Ease OUT (6 - Fastest)
-@option Ease OUT (7 - Circular easing)
-@option Ease OUT (8 - Bounce back)
-
-@option -------------------
-
-@option Ease IN (1 - Smooth Linear)
-@option Ease IN (2 - Smoother Linear)
-@option Ease IN (3 - Non-Linear)
-@option Ease IN (4 - Fast)
-@option Ease IN (5 - Faster)
-@option Ease IN (6 - Fastest)
-@option Ease IN (7 - Circular easing)
-@option Ease IN (8 - Bounce back)
-
-@option -------------------
-
-@option Ease IN-OUT (1 - Smooth Linear)
-@option Ease IN-OUT (2 - Smoother Linear)
-@option Ease IN-OUT (3 - Non-Linear)
-@option Ease IN-OUT (4 - Fast)
-@option Ease IN-OUT (5 - Faster)
-@option Ease IN-OUT (6 - Fastest)
-@option Ease IN-OUT (7 - Circular easing)
-@option Ease IN-OUT (8 - Bounce back)
-@default Linear
-@desc Select whether to use linear or easing function
-
-@param y
-@type select
-@text Y Function
-@option Linear
-
-@option -------------------
-
-@option Ease OUT (1 - Smooth Linear)
-@option Ease OUT (2 - Smoother Linear)
-@option Ease OUT (3 - Non-Linear)
-@option Ease OUT (4 - Fast)
-@option Ease OUT (5 - Faster)
-@option Ease OUT (6 - Fastest)
-@option Ease OUT (7 - Circular easing)
-@option Ease OUT (8 - Bounce back)
-
-@option -------------------
-
-@option Ease IN (1 - Smooth Linear)
-@option Ease IN (2 - Smoother Linear)
-@option Ease IN (3 - Non-Linear)
-@option Ease IN (4 - Fast)
-@option Ease IN (5 - Faster)
-@option Ease IN (6 - Fastest)
-@option Ease IN (7 - Circular easing)
-@option Ease IN (8 - Bounce back)
-
-@option -------------------
-
-@option Ease IN-OUT (1 - Smooth Linear)
-@option Ease IN-OUT (2 - Smoother Linear)
-@option Ease IN-OUT (3 - Non-Linear)
-@option Ease IN-OUT (4 - Fast)
-@option Ease IN-OUT (5 - Faster)
-@option Ease IN-OUT (6 - Fastest)
-@option Ease IN-OUT (7 - Circular easing)
-@option Ease IN-OUT (8 - Bounce back)
-
-@default Linear
-@desc Select whether to use linear or easing function
 */
 
 /*~struct~animationsetup:
@@ -1707,7 +1730,6 @@ TBSE.init = function() {
 
     // Move command
     cmd.move = function(args){
-        args.movefn = (typeof args.movefn === "string" ? JSON.parse(args.movefn) : args.movefn)
         const spr = this.sprite();
         let targX = TBSE.evalNumber.call(this, args.x)
         let targY = TBSE.evalNumber.call(this, args.y)
@@ -1730,12 +1752,11 @@ TBSE.init = function() {
                 targY += this.homePos().y;
                 break;
         }
-        spr.goto(targX, targY, args.dur, args.jump, args.movefn.x, args.movefn.y)
+        spr.goto(targX, targY, args.dur, args.jump, args.fn, args.fn)
     }
 
     // Move command (target)
     cmd.moveTarget = function(args){
-        args.movefn = (typeof args.movefn === "string" ? JSON.parse(args.movefn) : args.movefn)
         const seq = this.sequencer()
         // Individual
         if(args.scope == "Individual"){
@@ -1757,7 +1778,7 @@ TBSE.init = function() {
                         targY += t.homePos().y;
                         break;
                 }
-                spr.goto(targX, targY, args.dur, args.jump, args.movefn.x, args.movefn.y)
+                spr.goto(targX, targY, args.dur, args.jump, args.fn, args.fn)
             }
 
         // Center Mass
@@ -2287,7 +2308,7 @@ TBSE.init = function() {
         opt.img = JSON.parse(args.img)
         opt.startpoint = JSON.parse(args.startpoint)
         opt.endpoint = JSON.parse(args.endpoint)
-        opt.movefn = JSON.parse(args.movefn)
+        opt.movefn = args.fn
         opt.user = this
         opt.itemInUse = JsonEx.makeDeepCopy(this.sequencer()._itemInUse)
 
@@ -2506,7 +2527,6 @@ TBSE.init = function() {
             const target = this._scaling.targetValue
             const fn = this._scaling.fnName
             const scale = TBSE.Easings.fn(init, target, t, tMax, fn)
-            console.log(scale)
             this.battler().sprite().scale.x = scale
             this.battler().sprite().scale.y = scale
             if(this._scaling.duration <= 0){
@@ -3531,6 +3551,16 @@ TBSE.init = function() {
         this.blendMode = this._battler.sequencer()._blendMode
     }
 
+    TBSE.spriteEnemy.updateStateSpr = se.updateStateSprite
+    se.updateStateSprite = function(){
+        if(this._battler.dataBattler()._isAnimated){
+            this._stateIconSprite.y = -Math.round((this.height + 40) * 0.9);
+        } else {
+            TBSE.spriteEnemy.updateStateSpr.call(this);
+        }
+    }
+
+
     //#endregion
     //============================================================================================= 
     //#region Focus
@@ -3614,7 +3644,7 @@ TBSE.init = function() {
 
         loadAnimation(){
             // Load looped animation
-            const animloop = $dataAnimations[this._opt.img.anim]
+            const animloop = $dataAnimations[this._opt.img.animation]
             if (animloop){
                 const mv = Spriteset_Base.prototype.isMVAnimation(animloop)
                 this._animloop = new (mv ? TBSE.AnimationLoop_MV : TBSE.AnimationLoop)()
@@ -3647,7 +3677,6 @@ TBSE.init = function() {
             if(this._afterimages){
                 this._afterimages.update()
             }
-            //console.log(`${this.x} -- ${this.y}`)
         }
 
         updateDelay(){
@@ -3686,8 +3715,8 @@ TBSE.init = function() {
                 const lastx = this.x
                 const lasty = this.y
 
-                this.x = TBSE.Easings.fn(this._movement.startX, trgx, t, this._movement.maxDuration, this._opt.movefn.x)
-                this.y = TBSE.Easings.fn(this._movement.startY, trgy, t, this._movement.maxDuration, this._opt.movefn.y) + this.jumpHeight()
+                this.x = TBSE.Easings.fn(this._movement.startX, trgx, t, this._movement.maxDuration, this._opt.movefn)
+                this.y = TBSE.Easings.fn(this._movement.startY, trgy, t, this._movement.maxDuration, this._opt.movefn) - this.jumpHeight()
 
                 if(this._opt.img.autoAngle === "true"){
                     const diffx = this.x - lastx
@@ -3740,17 +3769,17 @@ TBSE.init = function() {
                         case "Top-Left":
                         case "Top-Mid":
                         case "Top-Right":
-                            return -spr.height + spr._realY + total
+                            return -spr.height + spr._realY + total - spr.jumpHeight()
                             
                         case "Mid-Left":
                         case "Middle":
                         case "Mid-Right":
-                            return -(spr.height/2) + spr._realY + total
+                            return -(spr.height/2) + spr._realY + total - spr.jumpHeight()
                             
                         case "Bottom-Left":
                         case "Bottom-Mid":
                         case "Bottom-Right":
-                            return spr._realY + total
+                            return spr._realY + total - spr.jumpHeight()
                     }
                 }else{
                     return t.y + total
@@ -4112,6 +4141,7 @@ TBSE.init = function() {
         onEnd(){
             this.setupDuration()
         }    
+
     }
 
     TBSE.AnimationLoop = class extends Sprite_Animation{
@@ -4161,6 +4191,8 @@ TBSE.init = function() {
             const grandparent = parent ? parent.parent : null;
             this.x = target._realX ? target._realX : target.x;
             this.y = target._realY ? target._realY : target.y;
+            this.x += target._offsetX ? target._offsetX : 0
+            this.y += target._offsetY ? target._offsetY : 0
             if (this.parent === grandparent) {
                 this.x += parent.x;
                 this.y += parent.y;
