@@ -2594,7 +2594,7 @@ TBSE.init = function() {
         performActionSequence(){
             if (this._itemInUse){
                 const actionId = this._itemInUse._motion
-                this._interpreter.setup(actionId, "action", this.postAction, this)
+                this._interpreter.setup(actionId, "skill", this.postAction, this)
                 this.clearActionRecord()
             } 
         }
@@ -3030,7 +3030,7 @@ TBSE.init = function() {
         if (seq === undefined){
             return false
         }
-        return seq._interpreter._phaseName == "action" && !seq._interpreter.ending()
+        return (seq._interpreter._phaseName == "action" || seq._interpreter._phaseName == "skill") && !seq._interpreter.ending()
     }
 
     // Record result while clearing the damage popup
@@ -3301,7 +3301,7 @@ TBSE.init = function() {
     }
 
     sb.zFormula = function(){
-        return this._realY * 2
+        return this._realY * 2 + (this._battler.sequencer()._interpreter._phaseName == "skill" ? 1 : 0)
     }
     // Fadein
     sb.startFade = function(mode, dur, fn = "Linear"){
