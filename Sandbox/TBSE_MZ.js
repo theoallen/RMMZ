@@ -1,6 +1,6 @@
 /*:
 @target MZ
-@plugindesc v0.1.20220225 - Theo's Battle Sequence Engine MZ.
+@plugindesc v0.1.20220226 - Theo's Battle Sequence Engine MZ.
 @help
 TBSE is spritesheet-based animation sequence plugin aiming for a free-frame 
 pick spritesheet animation sequencer. You are encouraged to use any kind 
@@ -1521,7 +1521,7 @@ TBSE.init = function() {
     //--------------------------------------------------------------------------------------------
     // Global function to check if any battler is doing action sequence
     this.isSequenceBusy = () => {
-        return TBSE.allBattlers().some(battler => battler.isDoingAction())
+        return TBSE.allBattlers().some(battler => battler.isDoingAction()) || SceneManager._scene._spriteset.doProjectilesExist()
     }
 
     // Function to get all battlers for convenience
@@ -1617,7 +1617,7 @@ TBSE.init = function() {
         outBack: t => {
             const c1 = 1.70158;
             const c3 = c1 + 1;
-            return 1 + c3 * pow(t - 1, 3) + c1 * pow(t - 1, 2)
+            return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2)
         },
 
         // In
@@ -3858,6 +3858,7 @@ TBSE.init = function() {
     }
 
     TBSE.Projectile._queue = []
+    TBSE.Projectile._onGoing = []
     TBSE.Projectile._expired = []
 
     //#endregion
@@ -3927,6 +3928,10 @@ TBSE.init = function() {
         }
     }
 
+    sset.doProjectilesExist = function(){
+        return TBSE.Projectile._onGoing.length > 0
+    }
+
     sset.updateProjectiles = function(){
         for(const prj of [...TBSE.Projectile._queue]){
             this._battleField.addChild(prj)
@@ -3934,6 +3939,7 @@ TBSE.init = function() {
                 this._battleField.addChild(prj._animloop)
             }
             TBSE.Projectile._queue.remove(prj)
+            TBSE.Projectile._onGoing.push(prj)
         }
         for(const prj of [...TBSE.Projectile._expired]){
             if (prj._animloop){
@@ -3941,6 +3947,7 @@ TBSE.init = function() {
             }
             prj.destroy()
             TBSE.Projectile._expired.remove(prj)
+            TBSE.Projectile._onGoing.remove(prj)
         }
     }
 
