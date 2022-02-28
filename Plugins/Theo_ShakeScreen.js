@@ -3,7 +3,7 @@
 @plugindesc Shake the screen in random directions.
 @author TheoAllen
 @help 
-Version 1.0
+Version 1.0.220228
 
 Shake the screen in random directions. Provides a better shake effect than 
 the vanilla shake screen.
@@ -39,25 +39,25 @@ var Theo = Theo || {}
 
 // I dont like IIFE notation
 Theo.Shake = function(){
-    this.pluginName = "Theo_ShakeScreen"
-    let shake = this;
+    const $ = Theo.Shake
+    $._pluginName = document.currentScript.src.match(/.+\/(.+)\.js/)[1]
 
-    PluginManager.registerCommand(shake.pluginName, "Shake", args => {
-        shake.dur = args.dur
-        shake.maxdur = args.dur
-        shake.power = args.pwr
-        shake.diminish = args.dim
-        shake.loop = args.loop
+    PluginManager.registerCommand($._pluginName, "Shake", args => {
+        $.dur = args.dur
+        $.maxdur = args.dur
+        $.power = args.pwr
+        $.diminish = args.dim
+        $.loop = args.loop
     });
 
-    shake.spritesetBase_updatePos = Spriteset_Base.prototype.updatePosition;
+    $.spritesetBase_updatePos = Spriteset_Base.prototype.updatePosition;
     Spriteset_Base.prototype.updatePosition = function(){
-        shake.spritesetBase_updatePos.call(this);
-        if(shake.dur > 0){
-            let rate = shake.diminish ? shake.dur/shake.maxdur : 1.0;
-            this.x += Math.random() * shake.power * rate * (Math.random() >= 0.5 ? 1 : -1);
-            this.y += Math.random() * shake.power * rate * (Math.random() >= 0.5 ? 1 : -1);
-            shake.dur -= 1
+        $.spritesetBase_updatePos.call(this);
+        if($.dur > 0){
+            let rate = $.diminish ? $.dur/$.maxdur : 1.0;
+            this.x += Math.random() * $.power * rate * (Math.random() >= 0.5 ? 1 : -1);
+            this.y += Math.random() * $.power * rate * (Math.random() >= 0.5 ? 1 : -1);
+            $.dur -= 1
         }
     }
 }
