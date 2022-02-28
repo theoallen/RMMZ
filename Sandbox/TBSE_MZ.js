@@ -128,44 +128,14 @@ the delay of each frame and all the timing on your own.
 @desc Maximum height of the jump
 
 @arg fn
-@type select
+@type combo
 @text Function
 @option Linear
-
-@option -------------------
-
-@option Ease OUT (1 - Smooth Linear)
-@option Ease OUT (2 - Smoother Linear)
-@option Ease OUT (3 - Non-Linear)
-@option Ease OUT (4 - Fast)
-@option Ease OUT (5 - Faster)
-@option Ease OUT (6 - Fastest)
-@option Ease OUT (7 - Circular easing)
-@option Ease OUT (8 - Bounce back)
-
-@option -------------------
-
-@option Ease IN (1 - Smooth Linear)
-@option Ease IN (2 - Smoother Linear)
-@option Ease IN (3 - Non-Linear)
-@option Ease IN (4 - Fast)
-@option Ease IN (5 - Faster)
-@option Ease IN (6 - Fastest)
-@option Ease IN (7 - Circular easing)
-@option Ease IN (8 - Bounce back)
-
-@option -------------------
-
-@option Ease IN-OUT (1 - Smooth Linear)
-@option Ease IN-OUT (2 - Smoother Linear)
-@option Ease IN-OUT (3 - Non-Linear)
-@option Ease IN-OUT (4 - Fast)
-@option Ease IN-OUT (5 - Faster)
-@option Ease IN-OUT (6 - Fastest)
-@option Ease IN-OUT (7 - Circular easing)
-@option Ease IN-OUT (8 - Bounce back)
+@option Smooth-Out
+@option Smooth-In
+@option Smooth-InOut
 @default Linear
-@desc Select whether to use linear or easing function
+@desc You can also type, for example 'inSine' to get specific function from https://easings.net/
 
 //========================================================================
 // * Command - Move to position (Target)
@@ -220,44 +190,14 @@ the delay of each frame and all the timing on your own.
 @desc Maximum height of the jump
 
 @arg fn
-@type select
+@type combo
 @text Function
 @option Linear
-
-@option -------------------
-
-@option Ease OUT (1 - Smooth Linear)
-@option Ease OUT (2 - Smoother Linear)
-@option Ease OUT (3 - Non-Linear)
-@option Ease OUT (4 - Fast)
-@option Ease OUT (5 - Faster)
-@option Ease OUT (6 - Fastest)
-@option Ease OUT (7 - Circular easing)
-@option Ease OUT (8 - Bounce back)
-
-@option -------------------
-
-@option Ease IN (1 - Smooth Linear)
-@option Ease IN (2 - Smoother Linear)
-@option Ease IN (3 - Non-Linear)
-@option Ease IN (4 - Fast)
-@option Ease IN (5 - Faster)
-@option Ease IN (6 - Fastest)
-@option Ease IN (7 - Circular easing)
-@option Ease IN (8 - Bounce back)
-
-@option -------------------
-
-@option Ease IN-OUT (1 - Smooth Linear)
-@option Ease IN-OUT (2 - Smoother Linear)
-@option Ease IN-OUT (3 - Non-Linear)
-@option Ease IN-OUT (4 - Fast)
-@option Ease IN-OUT (5 - Faster)
-@option Ease IN-OUT (6 - Fastest)
-@option Ease IN-OUT (7 - Circular easing)
-@option Ease IN-OUT (8 - Bounce back)
+@option Smooth-Out
+@option Smooth-In
+@option Smooth-InOut
 @default Linear
-@desc Select whether to use linear or easing function
+@desc You can also type, for example 'inSine' to get specific function from https://easings.net/
 
 //========================================================================
 // * Command - Anchor Home
@@ -431,45 +371,15 @@ the delay of each frame and all the timing on your own.
 @desc Setup the start/ending animation and trailing animation
 
 @arg fn
+@type combo
 @parent prjadv
-@type select
 @text Function
 @option Linear
-
-@option -------------------
-
-@option Ease OUT (1 - Smooth Linear)
-@option Ease OUT (2 - Smoother Linear)
-@option Ease OUT (3 - Non-Linear)
-@option Ease OUT (4 - Fast)
-@option Ease OUT (5 - Faster)
-@option Ease OUT (6 - Fastest)
-@option Ease OUT (7 - Circular easing)
-@option Ease OUT (8 - Bounce back)
-
-@option -------------------
-
-@option Ease IN (1 - Smooth Linear)
-@option Ease IN (2 - Smoother Linear)
-@option Ease IN (3 - Non-Linear)
-@option Ease IN (4 - Fast)
-@option Ease IN (5 - Faster)
-@option Ease IN (6 - Fastest)
-@option Ease IN (7 - Circular easing)
-@option Ease IN (8 - Bounce back)
-
-@option -------------------
-
-@option Ease IN-OUT (1 - Smooth Linear)
-@option Ease IN-OUT (2 - Smoother Linear)
-@option Ease IN-OUT (3 - Non-Linear)
-@option Ease IN-OUT (4 - Fast)
-@option Ease IN-OUT (5 - Faster)
-@option Ease IN-OUT (6 - Fastest)
-@option Ease IN-OUT (7 - Circular easing)
-@option Ease IN-OUT (8 - Bounce back)
+@option Smooth-Out
+@option Smooth-In
+@option Smooth-InOut
 @default Linear
-@desc Select whether to use linear or easing function
+@desc You can also type, for example 'inSine' to get specific function from https://easings.net/
 
 //========================================================================
 // * Command - Force result
@@ -704,6 +614,59 @@ If roll success/fail, it will affect all the next action effect until you reset 
 @default false
 @desc Set animation mirror here
 
+
+//========================================================================
+// * Command - Camera Move
+//========================================================================
+
+@command cam
+@text Camera - Move
+@desc Move the camera
+
+@arg to
+@type select
+@option User
+@option Target
+@option Center Screen
+@text Relative to
+@default Center Screen
+@desc Where do you want to shoot?
+
+@arg x
+@text X-Axis
+@type text
+@default 0
+@desc Relative X-Axis coordinate. JS syntax is ok
+
+@arg y
+@text Y-Axis
+@type text
+@default 0
+@desc Relative Y-Axis coordinate. JS syntax is ok
+
+@arg zoom
+@text Zoom
+@type text
+@default 1.0
+@desc Use decimal number on this one. JS code is ok!
+
+@arg dur
+@text Duration
+@type number
+@default 10
+@min 0
+@desc How many frames you need to wait until it completes its movement.
+
+@arg fn
+@type combo
+@text Function
+@option Linear
+@option Smooth-Out
+@option Smooth-In
+@option Smooth-InOut
+@default Linear
+@desc You can also type, for example 'inSine' to get specific function from https://easings.net/
+
 //========================================================================
 // * Command - Visible toggle
 //========================================================================
@@ -776,44 +739,14 @@ If roll success/fail, it will affect all the next action effect until you reset 
 @desc Duration to complete the resize. JS code is ok!
 
 @arg fnName
-@type select
-@text Change Function
+@type combo
+@text Function
 @option Linear
-
-@option -------------------
-
-@option Ease OUT (1 - Smooth Linear)
-@option Ease OUT (2 - Smoother Linear)
-@option Ease OUT (3 - Non-Linear)
-@option Ease OUT (4 - Fast)
-@option Ease OUT (5 - Faster)
-@option Ease OUT (6 - Fastest)
-@option Ease OUT (7 - Circular easing)
-@option Ease OUT (8 - Bounce back)
-
-@option -------------------
-
-@option Ease IN (1 - Smooth Linear)
-@option Ease IN (2 - Smoother Linear)
-@option Ease IN (3 - Non-Linear)
-@option Ease IN (4 - Fast)
-@option Ease IN (5 - Faster)
-@option Ease IN (6 - Fastest)
-@option Ease IN (7 - Circular easing)
-@option Ease IN (8 - Bounce back)
-
-@option -------------------
-
-@option Ease IN-OUT (1 - Smooth Linear)
-@option Ease IN-OUT (2 - Smoother Linear)
-@option Ease IN-OUT (3 - Non-Linear)
-@option Ease IN-OUT (4 - Fast)
-@option Ease IN-OUT (5 - Faster)
-@option Ease IN-OUT (6 - Fastest)
-@option Ease IN-OUT (7 - Circular easing)
-@option Ease IN-OUT (8 - Bounce back)
+@option Smooth-Out
+@option Smooth-In
+@option Smooth-InOut
 @default Linear
-@desc Select whether to use linear or easing function
+@desc You can also type, for example 'inSine' to get specific function from https://easings.net/
 
 //========================================================================
 // * Command - Rotation
@@ -844,44 +777,14 @@ If roll success/fail, it will affect all the next action effect until you reset 
 @desc Reset to 0 degree on finish.
 
 @arg fnName
-@type select
-@text Change Function
+@type combo
+@text Function
 @option Linear
-
-@option -------------------
-
-@option Ease OUT (1 - Smooth Linear)
-@option Ease OUT (2 - Smoother Linear)
-@option Ease OUT (3 - Non-Linear)
-@option Ease OUT (4 - Fast)
-@option Ease OUT (5 - Faster)
-@option Ease OUT (6 - Fastest)
-@option Ease OUT (7 - Circular easing)
-@option Ease OUT (8 - Bounce back)
-
-@option -------------------
-
-@option Ease IN (1 - Smooth Linear)
-@option Ease IN (2 - Smoother Linear)
-@option Ease IN (3 - Non-Linear)
-@option Ease IN (4 - Fast)
-@option Ease IN (5 - Faster)
-@option Ease IN (6 - Fastest)
-@option Ease IN (7 - Circular easing)
-@option Ease IN (8 - Bounce back)
-
-@option -------------------
-
-@option Ease IN-OUT (1 - Smooth Linear)
-@option Ease IN-OUT (2 - Smoother Linear)
-@option Ease IN-OUT (3 - Non-Linear)
-@option Ease IN-OUT (4 - Fast)
-@option Ease IN-OUT (5 - Faster)
-@option Ease IN-OUT (6 - Fastest)
-@option Ease IN-OUT (7 - Circular easing)
-@option Ease IN-OUT (8 - Bounce back)
+@option Smooth-Out
+@option Smooth-In
+@option Smooth-InOut
 @default Linear
-@desc Select whether to use linear or easing function
+@desc You can also type, for example 'inSine' to get specific function from https://easings.net/
 
 //========================================================================
 // * Command - Spinning
@@ -1337,7 +1240,7 @@ If roll success/fail, it will affect all the next action effect until you reset 
 const TBSE = {}
 TBSE.init = function() {
     this._pluginName = document.currentScript.src.match(/.+\/(.+)\.js/)[1]
-    this._version = '0.1.220106'  // <Major>.<Minor>.<YYMMDD>
+    this._version = '0.1.220228'  // <Major>.<Minor>.<YYMMDD>
 
     this._addons = []           // Store addons name
     this._battlerSprites = {}   // Store battler sprites
@@ -1652,34 +1555,12 @@ TBSE.init = function() {
         
     }
 
+    // Map the function here
     this.Easings.getFunction = str => {
         const nameMap = {
-            "Ease OUT (1 - Smooth Linear)": TBSE.Easings.outSine,
-            "Ease OUT (2 - Smoother Linear)": TBSE.Easings.outQuad,
-            "Ease OUT (3 - Non-Linear)": TBSE.Easings.outCubic,
-            "Ease OUT (4 - Fast)": TBSE.Easings.outQuart,
-            "Ease OUT (5 - Faster)": TBSE.Easings.outQuint,
-            "Ease OUT (6 - Fastest)": TBSE.Easings.outExpo,
-            "Ease OUT (7 - Circular easing)": TBSE.Easings.outCirc,
-            "Ease OUT (8 - Bounce back)": TBSE.Easings.outBack,
-    
-            "Ease IN (1 - Smooth Linear)": TBSE.Easings.inSine,
-            "Ease IN (2 - Smoother Linear)": TBSE.Easings.inQuad,
-            "Ease IN (3 - Non-Linear)": TBSE.Easings.inCubic,
-            "Ease IN (4 - Fast)": TBSE.Easings.inQuart,
-            "Ease IN (5 - Faster)": TBSE.Easings.inQuint,
-            "Ease IN (6 - Fastest)": TBSE.Easings.inExpo,
-            "Ease IN (7 - Circular easing)": TBSE.Easings.inCirc,
-            "Ease IN (8 - Bounce back)": TBSE.Easings.inBack,
-    
-            "Ease IN-OUT (1 - Smooth Linear)": TBSE.Easings.inOutSine,
-            "Ease IN-OUT (2 - Smoother Linear)": TBSE.Easings.inOutQuad,
-            "Ease IN-OUT (3 - Non-Linear)": TBSE.Easings.inOutCubic,
-            "Ease IN-OUT (4 - Fast)": TBSE.Easings.inOutQuart,
-            "Ease IN-OUT (5 - Faster)": TBSE.Easings.inOutQuint,
-            "Ease IN-OUT (6 - Fastest)": TBSE.Easings.inOutExpo,
-            "Ease IN-OUT (7 - Circular easing)": TBSE.Easings.inOutCirc,
-            "Ease IN-OUT (8 - Bounce back)": TBSE.Easings.inOutBack,
+            "Smooth-Out": TBSE.Easings.outSine,
+            "Smooth-In": TBSE.Easings.inSine,
+            "Smooth-InOut": TBSE.Easings.inOutSine,
         }
         return nameMap[str] || TBSE.Easings[str] || TBSE.Easings.linear
     }
@@ -2460,6 +2341,28 @@ TBSE.init = function() {
             sprList.push(spr)
         }
         TBSE.Projectile._queue = [...TBSE.Projectile._queue, ...sprList]
+    }
+
+    cmd.cam = function(args){
+        const spr = this.sprite();
+        let targX = TBSE.evalNumber.call(this, args.x)
+        let targY = TBSE.evalNumber.call(this, args.y)
+        if (this.isEnemy() && TBSE._invertX){ // necessary?
+            targX *= -1
+        }
+        switch(args.to){
+            case "Target":
+                const seq = this.sequencer()
+                const targets = seq._targetArray.length > 0 ? seq._targetArray : TBSE._affectedBattlers
+                targX += targets.reduce((total, trg)=>{ return trg.sprite().camRelativeX() + total}, 0) / targets.length
+                targY += targets.reduce((total, trg)=>{ return trg.sprite().camRelativeY() + total}, 0) / targets.length
+                break;
+            case "User":
+                targX += spr.camRelativeX();
+                targY += spr.camRelativeY();
+                break;
+        }
+        TBSE.Cam.startMove(targX, targY, TBSE.evalNumber(args.zoom), TBSE.evalNumber(args.dur), args.fn)
     }
     //#endregion
     //=============================================================================================
@@ -3330,8 +3233,8 @@ TBSE.init = function() {
 
     // It is possible to use a different function, for example, if you want to use easing movement
     sb.goto = function(x, y, duration, jump = 0, fnX = "Linear", fnY = "Linear"){
-        this._maxDuration = Number(duration);
-        this._jumpPower = Number(jump);
+        this._maxDuration = duration;
+        this._jumpPower = jump;
         this._targX = x;
         this._targY = y;
         this._oriX = this._realX;
@@ -3353,7 +3256,17 @@ TBSE.init = function() {
 
         const time = (this._maxDuration - this._tbseMoveDuration) - 1
         const height = (v0 * time) - (g * time * (time + 1) / 2);
-        return height//Math.max(0, height);
+        return Math.max(0, height);
+    }
+
+    // Relative X position for camera
+    sb.camRelativeX = function(){
+        return this.x - Graphics.boxWidth/2
+    }
+
+    // Relative Y position for camera
+    sb.camRelativeY = function(){
+        return this.y - Graphics.boxHeight/2
     }
     //#endregion
     //============================================================================================= 
@@ -4151,6 +4064,76 @@ TBSE.init = function() {
         }
     }
     
+    // Overwrite
+    sset.updatePosition = function() {
+        const cam = TBSE.Cam;
+        const scale = TBSE.Cam._zoom;
+        this.scale.x = scale;
+        this.scale.y = scale;
+        this.x = cam.x()
+        this.y = cam.y()
+
+        // Compatibility patch (Requires Shake Screen v1.0.220228)
+        if(Theo && Theo.Shake){
+            const shake = Theo.Shake
+            if(shake.dur > 0){
+                let rate = shake.diminish ? shake.dur/shake.maxdur : 1.0;
+                this.x += Math.random() * shake.power * rate * (Math.random() >= 0.5 ? 1 : -1);
+                this.y += Math.random() * shake.power * rate * (Math.random() >= 0.5 ? 1 : -1);
+                shake.dur -= 1
+            }
+        }
+    };
+
+    TBSE.Camera = class {
+        constructor(){
+            this.clear()
+        }
+        
+        clear(){
+            this._camX = 0
+            this._camY = 0
+            this._zoom = 1
+            this._maxDuration = 0
+            this._duration = 0
+            this._camStartX = 0
+            this._camStartY = 0
+            this._camTargetX = 0
+            this._camTargetY = 0
+            this._fn = "Linear"
+        }
+
+        update(){
+            if(this._duration > 0){
+                this._duration -= 1;
+                const t = this._maxDuration - this._duration
+                this._camX = TBSE.Easings.fn(this._camStartX, this._camTargetX, t, this._maxDuration, this._fn)
+                this._camY = TBSE.Easings.fn(this._camStartY, this._camTargetY, t, this._maxDuration, this._fn)
+                this._zoom = TBSE.Easings.fn(this._camStartZoom, this._camTargetZoom, t, this._maxDuration, this._fn)
+            }
+        }
+
+        startMove(x, y, zoom, duration, fn = "Linear"){
+            this._camStartX = this._camX
+            this._camStartY = this._camY
+            this._camTargetX = x
+            this._camTargetY = y
+            this._camStartZoom = this._zoom
+            this._camTargetZoom = zoom
+            this._maxDuration = this._duration = duration
+            this._fn = fn
+        }
+
+        x(){
+            return (-this._camX * this._zoom) + Math.round(-(Graphics.boxWidth/2) * (this._zoom - 1))
+        }
+
+        y(){
+            return (-this._camY * this._zoom) + Math.round(-(Graphics.boxHeight/2) * (this._zoom - 1))
+        }
+    }
+    TBSE.Cam = new TBSE.Camera()
+
     //#endregion
     //============================================================================================= 
     //#region Animation handler for looping
@@ -4339,6 +4322,12 @@ TBSE.init = function() {
         return success;
     };
 
+    TBSE.bm.setup = BattleManager.setup
+    BattleManager.setup = function(troopId, canEscape, canLose) {
+        TBSE.bm.setup.call(this, troopId, canEscape, canLose)
+        TBSE.Cam.clear()
+    };
+
     //============================================================================================= 
     // Scene Update
     //---------------------------------------------------------------------------------------------
@@ -4347,6 +4336,7 @@ TBSE.init = function() {
         TBSE.scene_battle_update.call(this);
         $gameParty.updateSequencer();
         $gameTroop.updateSequencer();
+        TBSE.Cam.update()
     };
 
     TBSE.scene_battle_terminate = Scene_Battle.prototype.terminate
