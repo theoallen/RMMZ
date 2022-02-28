@@ -1,6 +1,6 @@
 /*:
 @target MZ
-@plugindesc v0.1.20220226 - Theo's Battle Sequence Engine MZ.
+@plugindesc v0.1.20220228 - Theo's Battle Sequence Engine MZ.
 @help
 TBSE is spritesheet-based animation sequence plugin aiming for a free-frame 
 pick spritesheet animation sequencer. You are encouraged to use any kind 
@@ -121,11 +121,11 @@ the delay of each frame and all the timing on your own.
 @desc How many frames you need to wait until it completes its movement.
 
 @arg jump
-@text Jump / Arch power
+@text Jump (Max Height)
 @type number
 @default 0
 @min 0
-@desc Jump power. Higher number, higher jump.
+@desc Maximum height of the jump
 
 @arg fn
 @type select
@@ -213,11 +213,11 @@ the delay of each frame and all the timing on your own.
 @desc How many frames you need to wait until it completes its movement.
 
 @arg jump
-@text Jump / Arch power
+@text Jump (Max Height)
 @type number
 @default 0
 @min 0
-@desc Jump power. Higher number, higher jump.
+@desc Maximum height of the jump
 
 @arg fn
 @type select
@@ -368,9 +368,9 @@ the delay of each frame and all the timing on your own.
 @arg jump
 @parent prjbasic
 @type Text
-@text Jump / Arch power
+@text Jump (Max Height)
 @default 0
-@desc Jump / Arch power. JS code is ok!
+@desc Maximum height of the arc path. JS code is ok!
 
 @arg type
 @parent prjbasic
@@ -431,6 +431,7 @@ the delay of each frame and all the timing on your own.
 @desc Setup the start/ending animation and trailing animation
 
 @arg fn
+@parent prjadv
 @type select
 @text Function
 @option Linear
@@ -1752,7 +1753,7 @@ TBSE.init = function() {
                 targY += this.homePos().y;
                 break;
         }
-        spr.goto(targX, targY, args.dur, args.jump, args.fn, args.fn)
+        spr.goto(targX, targY, TBSE.evalNumber(args.dur), TBSE.evalNumber(args.jump), args.fn, args.fn)
     }
 
     // Move command (target)
@@ -1778,7 +1779,7 @@ TBSE.init = function() {
                         targY += t.homePos().y;
                         break;
                 }
-                spr.goto(targX, targY, args.dur, args.jump, args.fn, args.fn)
+                spr.goto(targX, targY, TBSE.evalNumber(args.dur), TBSE.evalNumber(args.jump), args.fn, args.fn)
             }
 
         // Center Mass
@@ -3329,8 +3330,8 @@ TBSE.init = function() {
 
     // It is possible to use a different function, for example, if you want to use easing movement
     sb.goto = function(x, y, duration, jump = 0, fnX = "Linear", fnY = "Linear"){
-        this._maxDuration = duration;
-        this._jumpPower = jump;
+        this._maxDuration = Number(duration);
+        this._jumpPower = Number(jump);
         this._targX = x;
         this._targY = y;
         this._oriX = this._realX;
@@ -3343,11 +3344,16 @@ TBSE.init = function() {
     sb.jumpHeight = function(){
         if (this._tbseMoveDuration === 0) {
             return 0
-        }
-        const time = this._maxDuration - this._tbseMoveDuration
-        const gravity = this._jumpPower/(this._maxDuration/2);
-        const height = (this._jumpPower * time) - (gravity * time * (time + 1) / 2);
-        return Math.max(0, height);
+        }    
+
+        const maxHeight = this._jumpPower
+        const halfTime = this._maxDuration/2
+        const g = maxHeight / (0.5 * Math.pow(halfTime, 2))
+        const v0 = ((0.5 * g * Math.pow(halfTime, 2)) + maxHeight)/halfTime
+
+        const time = (this._maxDuration - this._tbseMoveDuration) - 1
+        const height = (v0 * time) - (g * time * (time + 1) / 2);
+        return height//Math.max(0, height);
     }
     //#endregion
     //============================================================================================= 
@@ -3792,9 +3798,15 @@ TBSE.init = function() {
             if (this._movement.duration === 0) {
                 return 0
             }
-            const time = this._movement.maxDuration - this._movement.duration
-            const gravity = this._movement.jump/(this._movement.maxDuration/2);
-            return (this._movement.jump * time) - (gravity * time * (time + 1) / 2);
+
+            const maxHeight = this._movement.jump
+            const halfTime = this._movement.maxDuration/2
+            const g = maxHeight / (0.5 * Math.pow(halfTime, 2))
+            const v0 = ((0.5 * g * Math.pow(halfTime, 2)) + maxHeight)/halfTime
+            
+            const time = (this._movement.maxDuration - this._movement.duration) - 1
+            const height = (v0 * time) - (g * time * (time + 1) / 2);
+            return height
         }
 
         invokeEffect(){
