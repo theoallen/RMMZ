@@ -1,6 +1,6 @@
 /*:
 @target MZ
-@plugindesc v1.0.2 - Multiple Party POV Inventory System
+@plugindesc v1.0.3 - Multiple Party POV Inventory System
 @author TheoAllen
 @url https://github.com/theoallen/RMMZ/tree/master/Plugins
 @help
@@ -63,31 +63,22 @@ plugins. But I don't know.
 var Theo = Theo || {}
 Theo.MultiPOVInv = function(){
     const $ = Theo.MultiPOVInv
-    $._version = '1.0.2'
+    $._version = '1.0.3'
     $._pluginName = document.currentScript.src.match(/.+\/(.+)\.js/)[1]
+	
+	function Inventory() {
+        this.initialize(...arguments);
+    }
 
-    PluginManager.registerCommand($._pluginName, "save", args => {
-        const name = args.name
-        const clear = args.clear === "true"
-        $.getInventory.call($gameParty, name).saveInventory(clear)
-    });
+    Inventory.prototype.initialize = function(){
+        this._items = {}
+        this._weapons = {}
+        this._armors = {}
+        this._gold = 0
+    }
 
-    PluginManager.registerCommand($._pluginName, "load", args => {
-        const name = args.name
-        const merge = args.merge === "true"
-        $.getInventory.call($gameParty, name).loadInventory(merge)
-    });
-
-    $.Inventory = class {
-        constructor(){
-            this._items = {}
-            this._weapons = {}
-            this._armors = {}
-            this._gold = 0
-        }
-
-        saveInventory(clear){
-            this._items = Object.assign({}, $gameParty._items)
+    Inventory.prototype.saveInventory = function(clear){
+        this._items = Object.assign({}, $gameParty._items)
             this._weapons = Object.assign({}, $gameParty._weapons)
             this._armors = Object.assign({}, $gameParty._armors)
             this._gold = $gameParty._gold
@@ -97,34 +88,51 @@ Theo.MultiPOVInv = function(){
                 $gameParty._armors = {}
                 $gameParty._gold = 0
             }
-        }
+    }
 
-        loadInventory(merge){
-            if(merge){
-                for(const key of Object.keys(this._items)){
-                    const item = $dataItems[key]
-                    const sum = ($gameParty._items[key] !== undefined ? $gameParty._items[key] : 0) + this._items[key]
-                    $gameParty._items[key] = Math.min(sum, $gameParty.maxItems(item))
-                }
-                for(const key of Object.keys(this._weapons)){
-                    const item = $dataWeapons[key]
-                    const sum = ($gameParty._weapons[key] !== undefined ? $gameParty._weapons[key] : 0) + this._weapons[key]
-                    $gameParty._weapons[key] = Math.min(sum, $gameParty.maxItems(item))
-                }
-                for(const key of Object.keys(this._armors)){
-                    const item = $dataArmors[key]
-                    const sum = ($gameParty._armors[key] !== undefined ? $gameParty._armors[key] : 0) + this._armors[key]
-                    $gameParty._armors[key] = Math.min(sum, $gameParty.maxItems(item))
-                }
-                $gameParty.gainGold(this._gold)
-            }else{
-                $gameParty._items = Object.assign({}, this._items)
-                $gameParty._weapons = Object.assign({}, this._weapons)
-                $gameParty._armors = Object.assign({}, this._armors)
-                $gameParty._gold = this._gold
+    Inventory.prototype.loadInventory = function(merge){
+        if(merge){
+            for(const key of Object.keys(this._items)){
+                const item = $dataItems[key]
+                const sum = ($gameParty._items[key] !== undefined ? $gameParty._items[key] : 0) + this._items[key]
+                $gameParty._items[key] = Math.min(sum, $gameParty.maxItems(item))
             }
+            for(const key of Object.keys(this._weapons)){
+                const item = $dataWeapons[key]
+                const sum = ($gameParty._weapons[key] !== undefined ? $gameParty._weapons[key] : 0) + this._weapons[key]
+                $gameParty._weapons[key] = Math.min(sum, $gameParty.maxItems(item))
+            }
+            for(const key of Object.keys(this._armors)){
+                const item = $dataArmors[key]
+                const sum = ($gameParty._armors[key] !== undefined ? $gameParty._armors[key] : 0) + this._armors[key]
+                $gameParty._armors[key] = Math.min(sum, $gameParty.maxItems(item))
+            }
+            $gameParty.gainGold(this._gold)
+        }else{
+            $gameParty._items = Object.assign({}, this._items)
+            $gameParty._weapons = Object.assign({}, this._weapons)
+            $gameParty._armors = Object.assign({}, this._armors)
+            $gameParty._gold = this._gold
         }
     }
+
+    $.Inventory = Inventory
+
+    PluginManager.registerCommand($._pluginName, "save", args => {
+        const name = args.name
+        const clear = args.clear === "true"
+		const inv = $.getInventory.call($gameParty, name)
+		inv.prototype = Object.create($.Inventory.prototype)
+        inv.prototype.saveInventory.call(inv, clear)
+    });
+
+    PluginManager.registerCommand($._pluginName, "load", args => {
+        const name = args.name
+        const merge = args.merge === "true"
+		const inv = $.getInventory.call($gameParty, name)
+		inv.prototype = Object.create($.Inventory.prototype)
+        inv.prototype.loadInventory.call(inv, merge)
+    });
 
     $.getInventory = function(name){
         if(this._multiInventories === undefined){
